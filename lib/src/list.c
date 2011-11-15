@@ -327,6 +327,40 @@ void browseList (List *l, void (*browsefunc)(void*)) {
 }
 
 
+// --------------------------------------
+void* convertToArray (List *l, size_t sz) {
+ 
+ ListNode *ln;
+ void *tab=NULL, *p;
+ 
+ 
+ 
+ if ( l==NULL || sz==0 ) {
+  return NULL;
+ }
+ 
+ 
+ pthread_mutex_lock(&l->mutex);
+ 
+ if ( l->count>0 ) {
+  
+  tab=malloc(l->count*sz);
+  p=tab;
+  
+  for (ln=l->first; ln!=NULL; ln=ln->next) {
+   memcpy(p, ln->data, sz);
+   p+=sz;
+  }
+  
+ }
+ 
+ pthread_mutex_unlock(&l->mutex);
+ 
+ 
+ return tab;
+ 
+}
+
 
 
 

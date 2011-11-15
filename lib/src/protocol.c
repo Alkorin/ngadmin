@@ -3,22 +3,6 @@
 
 
 
-const unsigned short helloRequest[]={
- ATTR_PRODUCT, 
- ATTR_UNK2, 
- ATTR_NAME, 
- ATTR_MAC, 
- ATTR_UNK5, 
- ATTR_IP, 
- ATTR_NETMASK, 
- ATTR_GATEWAY, 
- ATTR_DHCP, 
- ATTR_UNK12, 
- ATTR_FIRM_VER, 
- ATTR_UNK14, 
- ATTR_UNK15, 
- ATTR_END
-};
 
 
 const struct ether_addr nullMac={.ether_addr_octet={0, 0, 0, 0, 0, 0}};
@@ -54,14 +38,11 @@ void initNgHeader (struct ng_header *nh, char code, const struct ether_addr *cli
 
 
 
-// ----------------------------------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------
 bool validateNgHeader (const struct ng_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum) {
- 
- int i;
  
  
  if ( nh->unk1!=1 ) {
-  //printf("unk1 not 1\n");
   return false;
  }
  
@@ -69,30 +50,27 @@ bool validateNgHeader (const struct ng_header *nh, char code, const struct ether
   return false;
  }
  
- for (i=0; i<6; i++) {
-  if ( nh->unk2[i]!=0 ) {
-   //printf("unk2[%i] not 0\n", i);
-   return false;
-  }
+ if ( nh->unk2!=0 ) {
+  return false;
+ }
+ 
+ if ( *(unsigned short*)nh->unk3!=0 ) {
+  return false;
  }
  
  if ( client_mac!=NULL && memcmp(nh->client_mac, client_mac, ETH_ALEN)!=0 ) {
-  //printf("client_mac err\n");
   return false;
  }
  
  if ( switch_mac!=NULL && memcmp(nh->switch_mac, switch_mac, ETH_ALEN)!=0 ) {
-  //printf("switch_mac err\n");
   return false;
  }
  
  if ( seqnum>0 && ntohl(nh->seqnum)!=seqnum ) {
-  //printf("incorrect seqnum\n");
   return false;
  }
  
- if ( *(unsigned int*)nh->unk3!=0 ) {
-  //printf("unk3 not 0\n");
+ if ( *(unsigned int*)nh->unk4!=0 ) {
   return false;
  }
  
@@ -167,21 +145,43 @@ int getPacketTotalSize (const struct ng_packet *np) {
 }
 
 
+
 // --------------------------------------------
 struct attr* newEmptyAttr (unsigned short attr) {
+ return newAttr(attr, 0, NULL);
+}
+
+
+
+// ------------------------------------------------------------------------
+struct attr* newAttr (unsigned short attr, unsigned short size, void *data) {
  
  struct attr *at;
  
  
  at=malloc(sizeof(struct attr));
  at->attr=attr;
- at->size=0;
- at->data=NULL;
+ at->size=size;
+ at->data=data;
  
  
  return at;
  
 }
+
+
+
+// ----------------------------------------------------------------
+struct attr* newByteAttr (unsigned short attr, unsigned char value) {
+ 
+ char *v=malloc(sizeof(char));
+ 
+ *v=value;
+ 
+ return newAttr(attr, 1, v);
+ 
+}
+
 
 
 // ----------------------------
@@ -196,12 +196,20 @@ void freeAttr (struct attr *at) {
 
 
 
-// -------------------------------------------------
-List* extractPacketAttributes (struct ng_packet *np) {
+// ------------------------------------------------------------------------------------------
+List* extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error) {
  
  List *l;
  struct attr *at;
  
+ 
+ if ( error!=NULL ) {
+  *error=np->nh->error;
+ }
+ 
+ if ( attr_error!=NULL ) {
+  *attr_error=ntohs(np->nh->attr);
+ }
  
  l=createEmptyList();
  
@@ -237,5 +245,77 @@ List* extractPacketAttributes (struct ng_packet *np) {
  return l;
  
 }
+
+
+
+// --------------------------------------------------------------
+void extractSwitchAttributes (struct swi_attr *sa, const List *l) {
+ 
+ const ListNode *ln;
+ const struct attr *at;
+ int len;
+ 
+ 
+ memset(sa, 0, sizeof(struct swi_attr));
+ 
+ // FIXME: mutex lock ?
+ 
+ for (ln=l->first; ln!=NULL; ln=ln->next) {
+  at=ln->data;
+  
+  switch ( at->attr ) {
+   
+   case ATTR_PRODUCT:
+    len=min(at->size, PRODUCT_SIZE);
+    memcpy(sa->product, at->data, len);
+    //trim(sa->product, len); // FIXME
+   break;
+   
+   case ATTR_NAME:
+    len=min(at->size, NAME_SIZE);
+    memcpy(sa->name, at->data, len);
+    //trim(sa->name, len); // FIXME
+   break;
+   
+   case ATTR_MAC:
+    memcpy(&sa->mac, at->data, ETH_ALEN);
+   break;
+   
+   case ATTR_IP:
+    sa->nc.ip=*(struct in_addr*)at->data;
+   break;
+   
+   case ATTR_NETMASK:
+    sa->nc.netmask=*(struct in_addr*)at->data;
+   break;
+   
+   case ATTR_GATEWAY:
+    sa->nc.gw=*(struct in_addr*)at->data;
+   break;
+   
+   case ATTR_DHCP:
+    sa->nc.dhcp=( ntohs(*(unsigned short*)at->data)==1 );
+   break;
+   
+   case ATTR_FIRM_VER:
+    len=min(at->size, FIRMWARE_SIZE-1);
+    memcpy(sa->firmware, at->data, len);
+    sa->firmware[len]=0;
+   break;
+   
+   case ATTR_PORTS_COUNT:
+    sa->ports=*(unsigned char*)at->data;
+   break;
+   
+   case ATTR_END:
+    return;
+   
+  }
+  
+ }
+ 
+ 
+}
+
 
 

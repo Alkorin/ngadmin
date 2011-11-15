@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <pthread.h>
 
 
@@ -55,6 +56,9 @@ bool findAndDestroy (List *l, void* data, void (*freefunc)(void*));
 
 // Browse all the items of the list through the callback function
 void browseList (List *l, void (*browsefunc)(void*));
+
+// 
+void* convertToArray (List *l, size_t sz);
 
 
 
