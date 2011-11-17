@@ -178,7 +178,20 @@ struct attr* newByteAttr (unsigned short attr, unsigned char value) {
  
  *v=value;
  
- return newAttr(attr, 1, v);
+ return newAttr(attr, sizeof(char), v);
+ 
+}
+
+
+
+// -----------------------------------------------------
+struct attr* newIntAttr (unsigned short attr, int value) {
+ 
+ int *v=malloc(sizeof(int));
+ 
+ *v=value;
+ 
+ return newAttr(attr, sizeof(int), v);
  
 }
 

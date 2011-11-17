@@ -4,74 +4,117 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "command.h"
 #include "common.h"
+#include "commands.h"
 
 
 
 
-#define MAXCOM	8
-
-
-
+#define MAXCOM	32
 
 
 int cont=1;
 
 
-static const struct TreeNode rootNode={.sub={
- &com_quit,
- &com_login, 
- &com_scan, 
- &com_ports, 
- &com_password, 
- &com_list, 
- &com_firmware, 
- &com_name, 
- NULL
-}};
 
 
-
-void printErrCode (int err) {
+const struct TreeNode* getSubCom (char **com, int n, int *t) {
+ 
+ int i;
+ const struct TreeNode *cur, *next;
  
  
- switch ( err ) {
-  case ERR_OK: /*printf("ok\n");*/ break;
-  case ERR_NET: printf("network error\n"); break;
-  case ERR_NOTLOG: printf("no switch selected\n"); break;
-  case ERR_BADPASS: printf("wrong password\n"); break;
-  case ERR_BADID: printf("bad switch id\n"); break;
-  case ERR_INVARG: printf("invalid argument\n"); break;
-  case ERR_TIMEOUT: printf("timeout\n"); break;
-  default: printf("unknown status code (%i)\n", err);
+ cur=&coms;
+ for (i=0; i<n; ++i) {
+  
+  // we have reached a terminal command, exit
+  if ( cur->sub==NULL ) break;
+  
+  // search sub command in sub command array
+  for (next=cur->sub; next->name!=NULL && strcmp(next->name, com[i])!=0; ++next);
+  
+  // sub command not found, exit
+  if ( next->name==NULL ) {
+   next=NULL;
+   break;
+  }
+  
+  // next command is now the current one
+  cur=next;
+  
  }
  
+ *t=i;
+ 
+ 
+ return cur;
  
 }
 
 
 
-void displaySwitchTab (const struct swi_attr *sa, int nb) {
+
+const struct TreeNode *compcur;
+
+
+
+char* my_generator (const char* text, int state) {
  
- int i=0;
+ static int len;
+ static const struct TreeNode *tn;
+ const char *name;
  
  
- if ( nb==0 ) {
-  printf("no switch found\n");
-  return;
+ if ( compcur==NULL ) { // sub command not found
+  return NULL;
+ } else if ( state==0 ) {
+  tn=compcur->sub;
+  if ( tn==NULL ) { // terminal command
+   return NULL;
+  }
+  len=strlen(text);
  }
  
  
- printf("Num\tMac\t\t\tProduct\t\tName\t\t\tIP/mask\t\t\t\tDHCP\tPorts\tFirmware\n");
  
- for (i=0; i<nb; ++i) {
-  printf("%i\t%s\t%s\t\t%s\t%s/", i, ether_ntoa(&sa[i].mac), sa[i].product, sa[i].name, inet_ntoa(sa[i].nc.ip));
-  printf("%s\t%s\t%i\t%s\n", inet_ntoa(sa[i].nc.netmask), ( sa[i].nc.dhcp ? "Yes" : "No" ), sa[i].ports, sa[i].firmware);
+ while ( (name=tn->name)!=NULL ) {
+  ++tn;
+  
+  if ( strncmp(name, text, len)==0 ) {
+   return strdup(name);
+  }
+  
  }
  
- printf("\nfound %i switch(es)\n", nb);
  
+ return NULL;
+ 
+}
+
+
+
+char** my_completion (const char *text, int start, int end UNUSED) {
+ 
+ char **matches=NULL;
+ char *line, *com[MAXCOM];
+ int i, n;
+ 
+ 
+ 
+ memset(com, 0, MAXCOM*sizeof(char*));
+ line=strdup(rl_line_buffer);
+ line[start]=0;
+ trim(line, start);
+ n=explode(line, com, MAXCOM);
+ free(line);
+ 
+ compcur=getSubCom(com, n, &i);
+ 
+ if ( i<n ) compcur=NULL;
+ matches=rl_completion_matches(text, my_generator);
+ 
+ 
+ return matches;
  
 }
 
@@ -83,7 +126,7 @@ int main (int argc, char **argv) {
  char *line, *com[MAXCOM];
  struct ngadmin *nga=NULL;
  struct timeval tv;
- const struct TreeNode *cur, *next, **tab;
+ const struct TreeNode *cur, *next;
  int i, n;
  
  
@@ -106,10 +149,13 @@ int main (int argc, char **argv) {
  ngadmin_setTimeout(nga, &tv);
  
  
- rl_bind_key('\t', rl_abort); // disable auto completion
+ //rl_bind_key('\t', rl_abort); // disable auto completion
+ rl_attempted_completion_function=my_completion;
  
  
  while ( cont ) {
+  
+  //rl_bind_key('\t', rl_complete); // enable auto-complete
   
   if ( (line=readline("> "))==NULL ) goto end;
   trim(line, strlen(line));
@@ -117,53 +163,39 @@ int main (int argc, char **argv) {
   n=explode(line, com, MAXCOM);
   free(line);
   
-  
-  i=0;
-  for (next=&rootNode; i<n; ++i) {
-   cur=next;
-   for (tab=cur->sub; (next=*tab)!=NULL && strcmp(next->name, com[i])!=0; ++tab);
-   if ( next==NULL ) break;
+  if ( n==0 ) {
+   continue;
   }
   
+  cur=getSubCom(com, n, &i);
   
-  if ( i<n ) { // commands left uncompared
+  if ( i<n ) { // commands left unchecked
    
    if ( cur->hasArgs ) { // left "commands" are in fact parameters
-    cur->comfunc(cur, n-i, (const char**)&com[i], nga);
-   } else {
-    if ( i==0 ) {
-     printf("unknown command\n");
-    } else {
-     printf("unknown %s subcommand\n", com[i-1]);
-    }
+    cur->comfunc(n-i, (const char**)&com[i], nga);
+   } else if ( i==0 ) { // root command
+    printf("unknown command\n");
+   } else if ( cur->sub==NULL ) { // terminal command without arguments
+    printf("%s as no subcommand and takes no parameter\n", com[i-1]);
+   } else { // intermediate command
+    printf("unknown %s subcommand\n", com[i-1]);
    }
    
   } else {
    
-   cur=next;
-   if ( cur->comfunc==NULL ) {
+   if ( cur->comfunc==NULL ) { // intermediate command
     // print available subcommands
-    for (tab=cur->sub; (next=*tab)!=NULL; ++tab) {
+    for (next=cur->sub; next!=NULL && next->name!=NULL; ++next) {
      printf("%s ", next->name);
     }
     printf("\n");
     
    } else { // terminal command
-   
-    cur->comfunc(cur, 0, NULL, nga);
-    
+    cur->comfunc(0, NULL, nga); 
    }
+   
   }
   
-  /*
-  if ( n==0 ) {
-   // nothing: do nothing
-   
-  } else if ( strcmp(com[0], "timeout")==0 ) {
-   // 
-   
-  }
-  */
   
   for (i=0; i<MAXCOM; i++) {
    if ( com[i]!=NULL ) {

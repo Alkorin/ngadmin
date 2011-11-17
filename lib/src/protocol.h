@@ -100,6 +100,9 @@ struct attr* newAttr (unsigned short attr, unsigned short size, void *data);
 struct attr* newByteAttr (unsigned short attr, unsigned char value);
 
 // 
+struct attr* newIntAttr (unsigned short attr, int value);
+
+// 
 void freeAttr (struct attr *at);
 
 // 

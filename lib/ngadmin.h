@@ -48,6 +48,7 @@
 #define PRIO_NORM		3
 #define PRIO_LOW		4
 
+#define BITRATE_UNSPEC		-1
 #define BITRATE_NOLIMIT		0
 #define BITRATE_512K		1
 #define BITRATE_1M		2
@@ -144,6 +145,22 @@ int ngadmin_resetPortsStatistics (struct ngadmin *nga) EXPORT;
 
 // 
 int ngadmin_changePassword (struct ngadmin *nga, const char* pass) EXPORT;
+
+
+// 
+int ngadmin_getStormFilterState (struct ngadmin *nga, int *s) EXPORT;
+
+
+// 
+int ngadmin_setStormFilterState (struct ngadmin *nga, int s) EXPORT;
+
+
+// 
+int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports) EXPORT;
+
+
+// 
+int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports) EXPORT;
 
 
 
