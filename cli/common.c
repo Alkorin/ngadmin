@@ -26,61 +26,34 @@ void printErrCode (int err) {
 
 
 
-void printBitrate (int br) {
- 
- 
- switch ( br ) {
-  case BITRATE_UNSPEC: printf("unspecified\n"); break;
-  case BITRATE_NOLIMIT: printf("unlimited\n"); break;
-  case BITRATE_512K: printf("512K\n"); break;
-  case BITRATE_1M: printf("1M\n"); break;
-  case BITRATE_2M: printf("2M\n"); break;
-  case BITRATE_4M: printf("4M\n"); break;
-  case BITRATE_8M: printf("8M\n"); break;
-  case BITRATE_16M: printf("16M\n"); break;
-  case BITRATE_32M: printf("32M\n"); break;
-  case BITRATE_64M: printf("64M\n"); break;
-  case BITRATE_128M: printf("128M\n"); break;
-  case BITRATE_256M: printf("256M\n"); break;
-  case BITRATE_512M: printf("512M\n"); break;
-  default: printf("unknown (%i)\n", br);
- }
- 
- 
-}
 
-
-struct BrStr {
- const char *str;
- int br;
+const char* bitrates[]={
+ "nl", 
+ "512K", 
+ "1M", 
+ "2M",  
+ "4M", 
+ "8M", 
+ "16M", 
+ "32M", 
+ "64M", 
+ "128M", 
+ "256M", 
+ "512M", 
+ NULL
 };
 
-static const struct BrStr bitrates[]={
- {"nl", BITRATE_NOLIMIT}, 
- {"512K", BITRATE_512K}, 
- {"1M", BITRATE_1M}, 
- {"2M", BITRATE_2M}, 
- {"4M", BITRATE_4M}, 
- {"8M", BITRATE_8M}, 
- {"16M", BITRATE_16M}, 
- {"32M", BITRATE_32M}, 
- {"64M", BITRATE_64M}, 
- {"128M", BITRATE_128M}, 
- {"256M", BITRATE_256M}, 
- {"512M", BITRATE_512M}, 
- {NULL, BITRATE_UNSPEC}
-};
 
 
 int parseBitrate (const char *s) {
  
- const struct BrStr *b;
+ int i;
  
  
- for (b=bitrates; b->str!=NULL && strcasecmp(b->str, s)!=0; ++b);
+ for (i=0; bitrates[i]!=NULL && strcasecmp(bitrates[i], s)!=0; ++i);
  
  
- return b->br;
+ return i;
  
 }
 

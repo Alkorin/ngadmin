@@ -23,13 +23,16 @@ int startNetwork (struct ngadmin *nga);
 int stopNetwork (struct ngadmin *nga);
 
 // 
+int forceInterface (struct ngadmin *nga);
+
+// 
 int updateTimeout (struct ngadmin *nga);
 
 // 
-int sendNgPacket (struct ngadmin *nga, char code, const struct ether_addr *switch_mac, unsigned int seqnum, const List *attr);
+int sendNgPacket (struct ngadmin *nga, char code, const List *attr);
 
 // 
-List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error, const struct ether_addr *switch_mac, unsigned int seqnum);
+List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error);
 
 
 

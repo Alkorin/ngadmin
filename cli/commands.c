@@ -5,6 +5,125 @@
 
 
 // =============================================================================
+// bitrate
+
+
+// helper function to analyse bitrate speed specifications
+static int bitrate_analyse (int nb, const char **com, int *ports) {
+ 
+ int i=0, s;
+ 
+ 
+ while ( i<nb-1 ) {
+  s=parseBitrate(com[i+1]);
+  if ( strcmp(com[i], "inout")==0 ) {
+   ports[0]=s;
+   ports[1]=s;
+  } else if ( strcmp(com[i], "in")==0 ) {
+   ports[0]=s;
+  } else if ( strcmp(com[i], "out")==0 ) {
+   ports[1]=s;
+  } else {
+   break;
+  }
+  i+=2;
+ }
+ 
+ 
+ return i;
+ 
+}
+
+
+static bool do_bitrate_set (int nb, const char **com, struct ngadmin *nga) {
+ 
+ int i, k=0, defs[]={12, 12}, p, *ports=NULL;
+ const struct swi_attr *sa;
+ bool ret=true;
+ 
+ 
+ if ( nb<2 ) {
+  printf("Usage: bitrate set [all SPEEDSPEC] <port1> SPEEDSPEC [<port2> SPEEDSPEC ...]\n");
+  printf("SPEEDSPEC: [inout <speed>] [in <ispeed>] [out <ospeed>]\n");
+  ret=false;
+  goto end;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ ports=malloc(2*sa->ports*sizeof(int));
+ 
+ // get defaults if present
+ if ( strcmp(com[k], "all")==0 ) {
+  ++k;
+  k+=bitrate_analyse(nb-k, &com[k], defs);
+ }
+ 
+ // apply defaults
+ for (i=0; i<sa->ports; ++i) {
+  memcpy(&ports[2*i], defs, sizeof(defs));
+ }
+ 
+ // get ports specifics
+ while ( k<nb ) {
+  p=strtol(com[k++], NULL, 0)-1;
+  if ( p>=0 && p<sa->ports ) {
+   k+=bitrate_analyse(nb-k, &com[k], &ports[2*p]);
+  }
+ }
+ 
+ // send it to the switch
+ i=ngadmin_setBitrateLimits(nga, ports);
+ printErrCode(i);
+ 
+ 
+ end:
+ free(ports);
+ 
+ return ret;
+ 
+}
+
+
+
+static bool do_bitrate_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+ 
+ int i, ret=true, *ports=NULL;
+ const struct swi_attr *sa;
+ 
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ ports=malloc(2*sa->ports*sizeof(int));
+ if ( (i=ngadmin_getBitrateLimits(nga, ports))!=ERR_OK ) {
+  printErrCode(i);
+  ret=false;
+  goto end;
+ }
+ 
+ for (i=0; i<sa->ports; ++i) {
+  printf("port %i: in %s, out %s\n", i+1, bitrates[ports[2*i+0]], bitrates[ports[2*i+1]]);
+ }
+ 
+ end:
+ free(ports);
+ 
+ return ret;
+ 
+}
+
+
+
+// =============================================================================
 // firmware
 
 
@@ -273,7 +392,7 @@ static bool do_ports_state (int nb UNUSED, const char **com UNUSED, struct ngadm
 
 
 
-static bool do_ports_stats_reset (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+static bool do_ports_statistics_reset (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i;
  
@@ -293,7 +412,7 @@ static bool do_ports_stats_reset (int nb UNUSED, const char **com UNUSED, struct
 
 
 
-static bool do_ports_stats_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+static bool do_ports_statistics_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i;
  const struct swi_attr *sa;
@@ -306,7 +425,7 @@ static bool do_ports_stats_show (int nb UNUSED, const char **com UNUSED, struct 
   ret=false;
   goto end;
  }
-  
+ 
  ps=calloc(sa->ports, sizeof(struct port_stats));
  if ( (i=ngadmin_getPortsStatistics(nga, ps))<0 ) {
   printErrCode(i);
@@ -314,9 +433,9 @@ static bool do_ports_stats_show (int nb UNUSED, const char **com UNUSED, struct 
   goto end;
  }
  
- printf("Port\tReceived\tSent\t\tCRC errors\n");
+ printf("Port\tReceived\tSent\tCRC errors\n");
  for (i=0; i<sa->ports; ++i) {
-  printf("%i\t%8llu\t%8llu\t%8llu\n", i+1, ps[i].recv, ps[i].sent, ps[i].crc);
+  printf("% 4i%12llu%12llu%14llu\n", i+1, ps[i].recv, ps[i].sent, ps[i].crc);
  }
  
  end:
@@ -369,10 +488,10 @@ static bool do_scan (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga
 
 
 // =============================================================================
-// stormfilt
+// stormfilter
 
 
-static bool do_stormfilt_enable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+static bool do_stormfilter_enable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i;
  const struct swi_attr *sa;
@@ -393,7 +512,7 @@ static bool do_stormfilt_enable (int nb UNUSED, const char **com UNUSED, struct 
 
 
 
-static bool do_stormfilt_disable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+static bool do_stormfilter_disable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i;
  const struct swi_attr *sa;
@@ -414,12 +533,18 @@ static bool do_stormfilt_disable (int nb UNUSED, const char **com UNUSED, struct
 
 
 
-static bool do_stormfilt_reset (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+static bool do_stormfilter_set (int nb, const char **com, struct ngadmin *nga) {
  
- int i, *ports=NULL;
+ int i, d=BITRATE_UNSPEC, p, *ports=NULL;
  const struct swi_attr *sa;
  bool ret=true;
  
+ 
+ if ( nb<2 ) {
+  printf("Usage: stormfilt set (all <speed0>)|(<port1> <speed1> [<port2> <speed2> ...])\n");
+  ret=false;
+  goto end;
+ }
  
  if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
   printf("must be logged\n");
@@ -429,47 +554,15 @@ static bool do_stormfilt_reset (int nb UNUSED, const char **com UNUSED, struct n
  
  
  ports=malloc(sa->ports*sizeof(int));
+ 
+ if ( strcmp(com[0], "all")==0 ) {
+  d=parseBitrate(com[1]);
+  com+=2;
+  nb-=2;
+ }
+ 
  for (i=0; i<sa->ports; ++i) {
-  ports[i]=BITRATE_NOLIMIT;
- }
- 
- i=ngadmin_setStormFilterValues(nga, ports);
- printErrCode(i);
- 
- 
- end:
- free(ports);
- 
- return ret;
- 
-}
-
-
-
-static bool do_stormfilt_set (int nb, const char **com, struct ngadmin *nga) {
- 
- int i, p, *ports=NULL;
- const struct swi_attr *sa;
- bool ret=true;
- 
- 
- if ( nb==0 ) {
-  printf("Usage: stormfilt set <port1> <speed1> [<port2> <speed2> ...]\n");
-  ret=false;
-  goto end;
- }
- 
- 
- if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
-  printf("must be logged\n");
-  ret=false;
-  goto end;
- }
- 
- 
- ports=malloc(sa->ports*sizeof(int));
- for (i=0; i<sa->ports; ++i) {
-  ports[i]=BITRATE_UNSPEC;
+  ports[i]=d;
  }
  
  for (i=0; i<nb; i+=2) {
@@ -491,7 +584,7 @@ static bool do_stormfilt_set (int nb, const char **com, struct ngadmin *nga) {
 
 
 
-static bool do_stormfilt_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+static bool do_stormfilter_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i, s, ret=true, *ports=NULL;
  const struct swi_attr *sa;
@@ -525,8 +618,7 @@ static bool do_stormfilt_show (int nb UNUSED, const char **com UNUSED, struct ng
  }
  
  for (i=0; i<sa->ports; ++i) {
-  printf("port %i: ", i+1);
-  printBitrate(ports[i]);
+  printf("port %i: %s\n", i+1, bitrates[ports[i]]);
  }
  
  end:
@@ -539,9 +631,56 @@ static bool do_stormfilt_show (int nb UNUSED, const char **com UNUSED, struct ng
 
 
 // =============================================================================
+// tree
+
+
+static void display_node (const struct TreeNode *tn, int depth) {
+ 
+ int i;
+ const struct TreeNode *s;
+ 
+ 
+ for (i=0; i<depth; ++i) {
+  putchar('\t');
+ }
+ 
+ puts(tn->name);
+ 
+ if ( tn->sub==NULL ) return;
+ 
+ for (s=tn->sub; s->name!=NULL; ++s) {
+  display_node(s, depth+1);
+ }
+ 
+ 
+}
+
+
+static bool do_tree (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga UNUSED) {
+ 
+ 
+ display_node(&coms, 0);
+ 
+ 
+ return true;
+ 
+}
+
+
+
+// =============================================================================
 
 
 COM_ROOT_START(coms)
+ 
+ COM_START(bitrate)
+  COM_TERM(set, do_bitrate_set, true)
+  COM_TERM(show, do_bitrate_show, false)
+ COM_END
+ 
+ COM_TERM(cabletest, NULL, true)
+ 
+ COM_TERM(defaults, NULL, false)
  
  COM_START(firmware)
   COM_TERM(show, do_firmware_show, false)
@@ -552,10 +691,22 @@ COM_ROOT_START(coms)
  
  COM_TERM(login, do_login, true)
  
+ COM_START(mirror)
+  COM_TERM(enable, NULL, false)
+  COM_TERM(disable, NULL, false)
+  COM_TERM(set, NULL, true)
+  COM_TERM(show, NULL, false)
+ COM_END
+ 
  COM_START(name)
   COM_TERM(show, do_name_show, false)
   COM_TERM(set, do_name_set, true)
   COM_TERM(clear, do_name_clear, false)
+ COM_END
+ 
+ COM_START(netconf)
+  COM_TERM(show, NULL, false)
+  COM_TERM(set, NULL, true)
  COM_END
  
  COM_START(password)
@@ -565,22 +716,36 @@ COM_ROOT_START(coms)
  
  COM_START(ports)
   COM_TERM(state, do_ports_state, false)
-  COM_START(stats)
-   COM_TERM(reset, do_ports_stats_reset, false)
-   COM_TERM(show, do_ports_stats_show, false)
+  COM_START(statistics)
+   COM_TERM(reset, do_ports_statistics_reset, false)
+   COM_TERM(show, do_ports_statistics_show, false)
   COM_END
+ COM_END
+ 
+ COM_START(qos)
+  COM_TERM(mode, NULL, true)
+  COM_TERM(set, NULL, true)
+  COM_TERM(show, NULL, false)
  COM_END
  
  COM_TERM(quit, do_quit, false)
  
+ COM_TERM(restart, NULL, false)
+ 
  COM_TERM(scan, do_scan, false)
  
- COM_START(stormfilt)
-  COM_TERM(enable, do_stormfilt_enable, false)
-  COM_TERM(disable, do_stormfilt_disable, false)
-  COM_TERM(reset, do_stormfilt_reset, false)
-  COM_TERM(set, do_stormfilt_set, true)
-  COM_TERM(show, do_stormfilt_show, false)
+ COM_START(stormfilter)
+  COM_TERM(enable, do_stormfilter_enable, false)
+  COM_TERM(disable, do_stormfilter_disable, false)
+  COM_TERM(set, do_stormfilter_set, true)
+  COM_TERM(show, do_stormfilter_show, false)
+ COM_END
+ 
+ COM_TERM(tree, do_tree, false)
+ 
+ COM_START(vlan)
+  COM_TERM(show, NULL, false)
+  COM_TERM(mode, NULL, true)
  COM_END
  
 COM_ROOT_END

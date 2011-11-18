@@ -11,8 +11,8 @@ int startNetwork (struct ngadmin *nga) {
  int ret;
  
  
+ memset(&nga->local, 0, sizeof(struct sockaddr_in));
  nga->local.sin_family=AF_INET;
- nga->remote=nga->local;
  nga->local.sin_port=htons(CLIENT_PORT);
  
  memset(&ifr, 0, sizeof(struct ifreq));
@@ -69,6 +69,32 @@ int stopNetwork (struct ngadmin *nga) {
 
 
 
+// -------------------------------------
+int forceInterface (struct ngadmin *nga) {
+ 
+ int ret;
+ 
+ 
+ 
+ ret=1;
+ if ( (ret=setsockopt(nga->sock, SOL_SOCKET, SO_BINDTODEVICE, nga->iface, strlen(nga->iface)+1))<0 ) {
+  perror("setsockopt(SO_BINDTODEVICE)");
+  return ret;
+ }
+ 
+ ret=1;
+ if ( (ret=setsockopt(nga->sock, SOL_SOCKET, SO_DONTROUTE, &ret, sizeof(ret)))<0 ) {
+  perror("setsockopt(SO_DONTROUTE)");
+  return ret;
+ }
+ 
+ 
+ return 0;
+ 
+}
+
+
+
 // ------------------------------------
 int updateTimeout (struct ngadmin *nga) {
  
@@ -88,13 +114,15 @@ int updateTimeout (struct ngadmin *nga) {
 
 
 
-// --------------------------------------------------------------------------------------------------------------------------
-int sendNgPacket (struct ngadmin *nga, char code, const struct ether_addr *switch_mac, unsigned int seqnum, const List *attr) {
+// ----------------------------------------------------------------
+int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
  
  char buffer[1500];
  struct ng_packet np;
  ListNode *ln;
  struct attr *at;
+ struct sockaddr_in remote;
+ const struct swi_attr *sa=nga->current;
  int ret;
  
  
@@ -102,7 +130,7 @@ int sendNgPacket (struct ngadmin *nga, char code, const struct ether_addr *switc
  np.buffer=buffer;
  np.maxlen=sizeof(buffer);
  initNgPacket(&np);
- initNgHeader(np.nh, code, &nga->localmac, switch_mac, seqnum);
+ initNgHeader(np.nh, code, &nga->localmac, sa==NULL ? &nullMac : &sa->mac , ++nga->seq);
  
  if ( attr!=NULL ) {
   for (ln=attr->first; ln!=NULL; ln=ln->next) {
@@ -111,10 +139,12 @@ int sendNgPacket (struct ngadmin *nga, char code, const struct ether_addr *switc
   }
  }
  
+ memset(&remote, 0, sizeof(struct sockaddr_in));
+ remote.sin_family=AF_INET;
+ remote.sin_addr.s_addr= sa==NULL || nga->keepbroad ? htonl(INADDR_BROADCAST) : sa->nc.ip.s_addr ;
+ remote.sin_port=htons(SWITCH_PORT);
  
- nga->remote.sin_addr.s_addr=htonl(INADDR_BROADCAST);
- nga->remote.sin_port=htons(SWITCH_PORT);
- if ( (ret=sendto(nga->sock, buffer, getPacketTotalSize(&np), 0, (struct sockaddr*)&nga->remote, sizeof(struct sockaddr_in)))<0 ) {
+ if ( (ret=sendto(nga->sock, buffer, getPacketTotalSize(&np), 0, (struct sockaddr*)&remote, sizeof(struct sockaddr_in)))<0 ) {
   perror("sendto");
  }
  
@@ -125,12 +155,14 @@ int sendNgPacket (struct ngadmin *nga, char code, const struct ether_addr *switc
 
 
 
-// ---------------------------------------------------------------------------------------------------------------------------------------------------
-List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error, const struct ether_addr *switch_mac, unsigned int seqnum) {
+// -----------------------------------------------------------------------------------------
+List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error) {
  
  char buffer[1500];
  struct ng_packet np;
+ struct sockaddr_in remote;
  socklen_t slen=sizeof(struct sockaddr_in);
+ const struct swi_attr *sa=nga->current;
  List *l=NULL;
  int len;
  
@@ -138,8 +170,12 @@ List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short 
  np.buffer=buffer;
  np.maxlen=sizeof(buffer);
  
- while ( (len=recvfrom(nga->sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&nga->remote, &slen))>=0 ) {
-  if ( len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, switch_mac, seqnum) ) {
+ memset(&remote, 0, sizeof(struct sockaddr_in));
+ remote.sin_family=AF_INET;
+ remote.sin_port=htons(SWITCH_PORT);
+ 
+ while ( (len=recvfrom(nga->sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &slen))>=0 ) {
+  if ( len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) ) {
    initNgPacket(&np);
    l=extractPacketAttributes(&np, error, attr_error);
    break;

@@ -57,6 +57,43 @@ int ngadmin_close (struct ngadmin *nga) {
 
 
 
+// ---------------------------------------------
+int ngadmin_forceInterface (struct ngadmin *nga) {
+ 
+ 
+ if ( nga==NULL ) {
+  return ERR_INVARG;
+ }
+ 
+ 
+ if ( forceInterface(nga)!=0 ) {
+  return ERR_NET;
+ } else {
+  return ERR_OK;
+ }
+ 
+}
+
+
+
+// --------------------------------------------------------------
+int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value) {
+ 
+ 
+ if ( nga==NULL ) {
+  return ERR_INVARG;
+ }
+ 
+ 
+ nga->keepbroad=value;
+ 
+ 
+ return ERR_OK;
+ 
+}
+
+
+
 // ------------------------------------------------------------
 int ngadmin_setPassword (struct ngadmin *nga, const char *pass) {
  
@@ -151,7 +188,7 @@ int ngadmin_scan (struct ngadmin *nga) {
  }
  
  // send request to all potential switches
- i=sendNgPacket(nga, CODE_READ_REQ, NULL, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
  if ( i<0 ) {
   return ERR_NET;
@@ -160,7 +197,7 @@ int ngadmin_scan (struct ngadmin *nga) {
  
  // try to receive any packets until timeout
  swiList=createEmptyList();
- while ( (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL, NULL, nga->seq))!=NULL ) {
+ while ( (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL))!=NULL ) {
   sa=malloc(sizeof(struct swi_attr));
   extractSwitchAttributes(sa, attr);
   destroyList(attr, (void(*)(void*))freeAttr);
@@ -227,16 +264,17 @@ int ngadmin_login (struct ngadmin *nga, int id) {
  }
  
  
- nga->current=NULL;
  sa=&nga->swi_tab[id];
+ nga->current=sa;
  
  attr=createEmptyList();
  pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_READ_REQ, &sa->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, &err, &attr_error, &sa->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, &err, &attr_error))==NULL ) {
   ret=ERR_NET;
+  nga->current=NULL;
   goto end;
  }
  
@@ -244,15 +282,13 @@ int ngadmin_login (struct ngadmin *nga, int id) {
  destroyList(attr, (void(*)(void*))freeAttr);
  if ( err==7 && attr_error==ATTR_PASSWORD ) {
   ret=ERR_BADPASS;
+  nga->current=NULL;
   goto end;
  }
  
  
- // login successful
- nga->current=sa;
  
  end:
- 
  
  return ret;
  
@@ -280,9 +316,9 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports) {
  attr=createEmptyList();
  pushBackList(attr, newEmptyAttr(ATTR_PORT_STATUS));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_READ_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -330,9 +366,9 @@ int ngadmin_setName (struct ngadmin *nga, const char *name) {
   pushBackList(attr, newAttr(ATTR_NAME, strlen(name), strdup(name)));
  }
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_WRITE_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -380,9 +416,9 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps) {
  attr=createEmptyList();
  pushBackList(attr, newEmptyAttr(ATTR_PORT_STATISTICS));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_READ_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -428,9 +464,9 @@ int ngadmin_resetPortsStatistics (struct ngadmin *nga) {
  pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
  pushBackList(attr, newByteAttr(ATTR_STATS_RESET, 1));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_WRITE_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -472,9 +508,9 @@ int ngadmin_changePassword (struct ngadmin *nga, const char* pass) {
  pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
  pushBackList(attr, newAttr(ATTR_NEW_PASSWORD, strlen(pass), strdup(pass)));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_WRITE_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -518,9 +554,9 @@ int ngadmin_getStormFilterState (struct ngadmin *nga, int *s) {
  attr=createEmptyList();
  pushBackList(attr, newEmptyAttr(ATTR_STORM_ENABLE));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_READ_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -564,9 +600,9 @@ int ngadmin_setStormFilterState (struct ngadmin *nga, int s) {
  pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
  pushBackList(attr, newByteAttr(ATTR_STORM_ENABLE, s!=0));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_WRITE_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -606,9 +642,9 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports) {
  attr=createEmptyList();
  pushBackList(attr, newEmptyAttr(ATTR_STORM_BITRATE));
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_READ_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -661,9 +697,9 @@ int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports) {
  }
  
  pushBackList(attr, newEmptyAttr(ATTR_END));
- i=sendNgPacket(nga, CODE_WRITE_REQ, &nga->current->mac, ++nga->seq, attr);
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
  destroyList(attr, (void(*)(void*))freeAttr);
- if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, &nga->current->mac, nga->seq))==NULL ) {
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error))==NULL ) {
   ret=ERR_NET;
   goto end;
  }
@@ -682,5 +718,110 @@ int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports) {
  
 }
 
+
+
+// -----------------------------------------------------------
+int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) {
+ 
+ List *attr;
+ ListNode *ln;
+ struct attr *at;
+ int ret=ERR_OK, i;
+ 
+ 
+ if ( nga==NULL || ports==NULL ) {
+  return ERR_INVARG;
+ } else if ( nga->current==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newEmptyAttr(ATTR_BITRATE_INPUT));
+ pushBackList(attr, newEmptyAttr(ATTR_BITRATE_OUTPUT));
+ pushBackList(attr, newEmptyAttr(ATTR_END));
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
+ destroyList(attr, (void(*)(void*))freeAttr);
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_READ_REP, NULL, NULL))==NULL ) {
+  ret=ERR_NET;
+  goto end;
+ }
+ 
+ for (ln=attr->first; ln!=NULL; ln=ln->next) {
+  at=ln->data;
+  if ( at->attr==ATTR_BITRATE_INPUT && at->size>=5 && (i=*(char*)(at->data)-1)>=0 && i<nga->current->ports ) {
+   ports[i*2+0]=ntohl(*(int*)(1+(char*)at->data));
+  } else if ( at->attr==ATTR_BITRATE_OUTPUT && at->size>=5 && (i=*(char*)(at->data)-1)>=0 && i<nga->current->ports ) {
+   ports[i*2+1]=ntohl(*(int*)(1+(char*)at->data));
+  }
+ }
+ 
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ 
+ end:
+ 
+ return ret;
+ 
+}
+
+
+
+// -----------------------------------------------------------------
+int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports) {
+ 
+ List *attr;
+ int ret=ERR_OK, i;
+ char err;
+ unsigned short attr_error;
+ char *p;
+ 
+ 
+ if ( nga==NULL || ports==NULL ) {
+  return ERR_INVARG;
+ } else if ( nga->current==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
+ 
+ for (i=0; i<nga->current->ports; ++i) {
+  if ( ports[2*i+0]>=0 && ports[2*i+0]<=11 ) {
+   p=malloc(5);
+   *p=i+1;
+   *(int*)(p+1)=htonl(ports[2*i+0]);
+   pushBackList(attr, newAttr(ATTR_BITRATE_INPUT, 5, p));
+  }
+  if ( ports[2*i+1]>=0 && ports[2*i+1]<=11 ) {
+   p=malloc(5);
+   *p=i+1;
+   *(int*)(p+1)=htonl(ports[2*i+1]);
+   pushBackList(attr, newAttr(ATTR_BITRATE_OUTPUT, 5, p));
+  }
+ }
+ 
+ pushBackList(attr, newEmptyAttr(ATTR_END));
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
+ destroyList(attr, (void(*)(void*))freeAttr);
+ if ( i<0 || (attr=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error))==NULL ) {
+  ret=ERR_NET;
+  goto end;
+ }
+ 
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ if ( err==7 && attr_error==ATTR_PASSWORD ) {
+  ret=ERR_BADPASS;
+  goto end;
+ }
+ 
+ 
+ end:
+ 
+ return ret;
+ 
+}
 
 

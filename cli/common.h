@@ -17,10 +17,11 @@
 extern int cont;
 
 
+extern const char* bitrates[];
+
 
 void displaySwitchTab (const struct swi_attr *sa, int nb);
 void printErrCode (int err);
-void printBitrate (int br);
 int parseBitrate (const char *s);
 
 // 

@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 
+#include <getopt.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -69,12 +70,12 @@ char* my_generator (const char* text, int state) {
   return NULL;
  } else if ( state==0 ) {
   tn=compcur->sub;
-  if ( tn==NULL ) { // terminal command
-   return NULL;
-  }
   len=strlen(text);
  }
  
+ if ( tn==NULL ) { // terminal command
+  return NULL;
+ }
  
  
  while ( (name=tn->name)!=NULL ) {
@@ -123,7 +124,16 @@ char** my_completion (const char *text, int start, int end UNUSED) {
 
 int main (int argc, char **argv) {
  
+ static const struct option opts[]={
+  {"keep-broadcasting", no_argument, NULL, 'b'}, 
+  {"force-interface", no_argument, NULL, 'f'}, 
+  {"interface", required_argument, NULL, 'i'}, 
+  {"help", no_argument, NULL, 'h'}, 
+  {0, 0, 0, 0}
+ };
  char *line, *com[MAXCOM];
+ const char *iface="eth0";
+ bool kb=false, force=false;
  struct ngadmin *nga=NULL;
  struct timeval tv;
  const struct TreeNode *cur, *next;
@@ -131,14 +141,47 @@ int main (int argc, char **argv) {
  
  
  
- if ( argc<2 ) {
-  printf("Usage: %s <interface>\n", argv[0]);
-  return 1;
+ opterr=0;
+ 
+ while ( (n=getopt_long(argc, argv, "bfi:h", opts, NULL))!=-1 ) {
+  switch ( n ) {
+   
+   case 'b':
+    kb=true;
+   break;
+   
+   case 'f':
+    force=true;
+   break;
+   
+   case 'i':
+    iface=optarg;
+   break;
+   
+   case 'h':
+    printf("Usage: %s [-b] [-f] [-i <interface>]\n", argv[0]);
+    goto end;
+   
+   case '?':
+    printf("Unknown option: \"%s\"\n", argv[optind-1]);
+    goto end;
+   
+  }
  }
+ 
+ argc-=optind;
+ argv+=optind;
+ 
+ 
+ if ( argc!=0 ) {
+  printf("Unknown trailing options\n");
+  goto end;
+ }
+ 
  
  memset(com, 0, MAXCOM*sizeof(char*));
  
- if ( (nga=ngadmin_init(argv[1]))==NULL ) {
+ if ( (nga=ngadmin_init(iface))==NULL ) {
   fprintf(stderr, "Initialization error\n");
   goto end;
  }
@@ -149,48 +192,54 @@ int main (int argc, char **argv) {
  ngadmin_setTimeout(nga, &tv);
  
  
+ if ( kb && ngadmin_setKeepBroadcasting(nga, true)!=ERR_OK ) goto end;
+ 
+ if ( force && ngadmin_forceInterface(nga)!=ERR_OK ) goto end;
+ 
+ 
  //rl_bind_key('\t', rl_abort); // disable auto completion
+ //rl_bind_key('\t', rl_complete); // enable auto-complete
  rl_attempted_completion_function=my_completion;
+ rl_completion_entry_function=my_generator;
  
  
  while ( cont ) {
   
-  //rl_bind_key('\t', rl_complete); // enable auto-complete
-  
   if ( (line=readline("> "))==NULL ) goto end;
-  trim(line, strlen(line));
   if ( *line!=0 ) add_history(line);
+  trim(line, strlen(line));
   n=explode(line, com, MAXCOM);
   free(line);
   
-  if ( n==0 ) {
-   continue;
-  }
+  if ( n==0 ) continue;
   
   cur=getSubCom(com, n, &i);
   
   if ( i<n ) { // commands left unchecked
    
-   if ( cur->hasArgs ) { // left "commands" are in fact parameters
-    cur->comfunc(n-i, (const char**)&com[i], nga);
-   } else if ( i==0 ) { // root command
+   if ( i==0 ) { // root command
     printf("unknown command\n");
-   } else if ( cur->sub==NULL ) { // terminal command without arguments
-    printf("%s as no subcommand and takes no parameter\n", com[i-1]);
-   } else { // intermediate command
+   } else if ( cur->sub!=NULL ) { // intermediate command
     printf("unknown %s subcommand\n", com[i-1]);
+   } else if ( !cur->hasArgs ) { // terminal command without arguments
+    printf("%s as no subcommand and takes no parameter\n", com[i-1]);
+   } else if ( cur->comfunc==NULL ) { // erroneous terminal command without function
+    printf("terminal command without function\n");
+   } else { // terminal command with arguments, left "commands" are in fact parameters
+    cur->comfunc(n-i, (const char**)&com[i], nga);
    }
    
-  } else {
+  } else { // no command left
    
-   if ( cur->comfunc==NULL ) { // intermediate command
+   if ( cur->sub!=NULL ) { // intermediate command
     // print available subcommands
-    for (next=cur->sub; next!=NULL && next->name!=NULL; ++next) {
+    for (next=cur->sub; next->name!=NULL; ++next) {
      printf("%s ", next->name);
     }
     printf("\n");
-    
-   } else { // terminal command
+   } else if ( cur->comfunc==NULL ) { // erroneous terminal command without function
+    printf("terminal command without function\n");
+   } else { // terminal command without arguments
     cur->comfunc(0, NULL, nga); 
    }
    

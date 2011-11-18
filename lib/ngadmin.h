@@ -43,6 +43,7 @@
 #define QOS_PORT		1
 #define QOS_DOT			2
 
+#define PRIO_UNSPEC		-1
 #define PRIO_HIGH		1
 #define PRIO_MED		2
 #define PRIO_NORM		3
@@ -103,6 +104,14 @@ struct ngadmin* ngadmin_init (const char *iface) EXPORT;
 int ngadmin_close (struct ngadmin *nga) EXPORT;
 
 
+// 
+int ngadmin_forceInterface (struct ngadmin *nga) EXPORT;
+
+
+// 
+int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value) EXPORT;
+
+
 // specify password to use for authenticating on switches
 int ngadmin_setPassword (struct ngadmin *nga, const char *pass) EXPORT;
 
@@ -161,6 +170,14 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports) EXPORT;
 
 // 
 int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports) EXPORT;
+
+
+// 
+int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) EXPORT;
+
+
+// 
+int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports) EXPORT;
 
 
 
