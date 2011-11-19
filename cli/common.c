@@ -44,6 +44,15 @@ const char* bitrates[]={
 };
 
 
+const char* prio[]={
+ NULL, 
+ "high", 
+ "medium", 
+ "normal", 
+ "low", 
+ NULL
+};
+
 
 int parseBitrate (const char *s) {
  
@@ -54,6 +63,20 @@ int parseBitrate (const char *s) {
  
  
  return i;
+ 
+}
+
+
+
+char parsePrio (const char *s) {
+ 
+ int i;
+ 
+ 
+ for (i=1; prio[i]!=NULL && strcasecmp(prio[i], s)!=0; ++i);
+ 
+ 
+ return (char)i;
  
 }
 

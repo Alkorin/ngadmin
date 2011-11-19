@@ -180,6 +180,31 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) EXPORT;
 int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports) EXPORT;
 
 
+// 
+int ngadmin_getQOSMode (struct ngadmin *nga, int *s) EXPORT;
+
+
+// 
+int ngadmin_setQOSMode (struct ngadmin *nga, int s) EXPORT;
+
+
+// 
+int ngadmin_getQOSValues (struct ngadmin *nga, char *ports) EXPORT;
+
+
+// 
+int ngadmin_setQOSValues (struct ngadmin *nga, const char *ports) EXPORT;
+
+
+// 
+int ngadmin_restart (struct ngadmin *nga) EXPORT;
+
+
+// 
+int ngadmin_defaults (struct ngadmin *nga) EXPORT;
+
+
+
 
 #endif
 

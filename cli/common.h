@@ -17,12 +17,14 @@
 extern int cont;
 
 
-extern const char* bitrates[];
+extern const char *bitrates[], *prio[];
 
 
 void displaySwitchTab (const struct swi_attr *sa, int nb);
 void printErrCode (int err);
 int parseBitrate (const char *s);
+char parsePrio (const char *s);
+
 
 // 
 int trim (char *txt, int start);

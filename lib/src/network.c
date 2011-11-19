@@ -172,10 +172,9 @@ List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short 
  
  memset(&remote, 0, sizeof(struct sockaddr_in));
  remote.sin_family=AF_INET;
- remote.sin_port=htons(SWITCH_PORT);
  
  while ( (len=recvfrom(nga->sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &slen))>=0 ) {
-  if ( len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) ) {
+  if ( ntohs(remote.sin_port)==SWITCH_PORT && len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) ) {
    initNgPacket(&np);
    l=extractPacketAttributes(&np, error, attr_error);
    break;
