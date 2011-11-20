@@ -29,6 +29,13 @@ int startNetwork (struct ngadmin *nga) {
   close(nga->sock);
   return ret;
  }
+ /*
+ Here we have a problem: when you have multiple interfaces, sending a packet to 
+ 255.255.255.255 may not send it to the interface you want. If you bind() to 
+ the address of the interface, you will not be able to receive broadcasts. 
+ The only solution I have found yet is in this case to use 
+ setsockopt(SO_BINDTODEVICE) but this requires root priviledges. 
+ */
  //local.sin_addr=(*(struct sockaddr_in*)&ifr.ifr_addr).sin_addr; // FIXME
  
  // get the interface MAC address
@@ -76,12 +83,22 @@ int forceInterface (struct ngadmin *nga) {
  
  
  
+ /*
+ As described bellow, when you have multiple interfaces, this forces the packet 
+ to go to a particular interface. 
+ */
  ret=1;
  if ( (ret=setsockopt(nga->sock, SOL_SOCKET, SO_BINDTODEVICE, nga->iface, strlen(nga->iface)+1))<0 ) {
   perror("setsockopt(SO_BINDTODEVICE)");
   return ret;
  }
  
+ /*
+ If the switch's IP is not in your network range, for instance because you do 
+ not have DHCP  enabled or you started the switch after it, this allows to 
+ bypass the routing tables and consider every address is directly reachable on 
+ the interface. 
+ */
  ret=1;
  if ( (ret=setsockopt(nga->sock, SOL_SOCKET, SO_DONTROUTE, &ret, sizeof(ret)))<0 ) {
   perror("setsockopt(SO_DONTROUTE)");
@@ -155,15 +172,14 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
 
 
 
-// -----------------------------------------------------------------------------------------
-List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error) {
+// ---------------------------------------------------------------------------------------------------
+int recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error, List *attr) {
  
  char buffer[1500];
  struct ng_packet np;
  struct sockaddr_in remote;
  socklen_t slen=sizeof(struct sockaddr_in);
  const struct swi_attr *sa=nga->current;
- List *l=NULL;
  int len;
  
  
@@ -173,16 +189,120 @@ List* recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short 
  memset(&remote, 0, sizeof(struct sockaddr_in));
  remote.sin_family=AF_INET;
  
- while ( (len=recvfrom(nga->sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &slen))>=0 ) {
-  if ( ntohs(remote.sin_port)==SWITCH_PORT && len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) ) {
-   initNgPacket(&np);
-   l=extractPacketAttributes(&np, error, attr_error);
+ while ( 1 ) {
+  
+  len=recvfrom(nga->sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &slen);
+  
+  if ( len<0 ) {
    break;
   }
+  
+  if ( ntohs(remote.sin_port)==SWITCH_PORT && len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) ) {
+   initNgPacket(&np);
+   extractPacketAttributes(&np, error, attr_error, attr);
+   len=0;
+   break;
+  }
+  
  }
  
  
- return l;
+ return len;
+ 
+}
+
+
+
+// ----------------------------------------------
+int readRequest (struct ngadmin *nga, List *attr) {
+ 
+ int i, ret=ERR_OK;
+ unsigned short attr_error;
+ char err;
+ 
+ 
+ if ( nga==NULL ) {
+  ret=ERR_INVARG;
+  goto end;
+ }
+ 
+ // add end attribute to end
+ pushBackList(attr, newEmptyAttr(ATTR_END));
+ 
+ i=sendNgPacket(nga, CODE_READ_REQ, attr);
+ 
+ // the list will be filled again by recvNgPacket
+ clearList(attr, (void(*)(void*))freeAttr);
+ 
+ if ( i<0 || (i=recvNgPacket(nga, CODE_READ_REP, &err, &attr_error, attr))<0 ) {
+  ret=ERR_NET;
+ }
+ 
+ if ( err==7 && attr_error==ATTR_PASSWORD ) {
+  ret=ERR_BADPASS;
+  goto end;
+ }
+ 
+ 
+ end:
+ 
+ 
+ return ret;
+ 
+}
+
+
+
+// -----------------------------------------------
+int writeRequest (struct ngadmin *nga, List *attr) {
+ 
+ int i, ret=ERR_OK;
+ unsigned short attr_error;
+ char err;
+ 
+ 
+ if ( nga==NULL ) {
+  ret=ERR_INVARG;
+  goto end;
+ } else if ( nga->current==NULL ) {
+  ret=ERR_NOTLOG;
+  goto end;
+ }
+ 
+ 
+ if ( attr==NULL ) {
+  attr=createEmptyList();
+ }
+ 
+ // add password attribute to start
+ pushFrontList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
+ 
+ // add end attribute to end
+ pushBackList(attr, newEmptyAttr(ATTR_END));
+ 
+ i=sendNgPacket(nga, CODE_WRITE_REQ, attr);
+ 
+ // the list will be filled again by recvNgPacket
+ // but normally it will be still empty
+ clearList(attr, (void(*)(void*))freeAttr);
+ 
+ if ( i<0 || (i=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr))<0 ) {
+  ret=ERR_NET;
+  goto end;
+ }
+ 
+ if ( err==7 && attr_error==ATTR_PASSWORD ) {
+  ret=ERR_BADPASS;
+  goto end;
+ }
+ 
+ 
+ end:
+ // the switch replies to write request by just a header (no attributes), so the list can be destroyed
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ 
+ return ret;
  
 }
 

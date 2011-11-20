@@ -24,8 +24,8 @@ struct ng_header {
  char unk2; // always 0
  unsigned short attr; // attribute code which caused error
  char unk3[2]; // always 0
- char client_mac[6];
- char switch_mac[6];
+ char client_mac[ETH_ALEN];
+ char switch_mac[ETH_ALEN];
  unsigned int seqnum;
  char proto_id[4]; // always "NSDP"
  char unk4[4]; // always 0
@@ -106,7 +106,7 @@ struct attr* newIntAttr (unsigned short attr, int value);
 void freeAttr (struct attr *at);
 
 // 
-List* extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error);
+void extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error, List *attr);
 
 // 
 void extractSwitchAttributes (struct swi_attr *sa, const List *l);

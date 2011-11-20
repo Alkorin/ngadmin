@@ -79,7 +79,7 @@ struct net_conf {
 
 
 struct swi_attr {
- char product[PRODUCT_SIZE];	// product name (eg. GS108E)
+ char product[PRODUCT_SIZE];	// product name (eg. GS108EV1)
  char name[NAME_SIZE];		// custom name
  char firmware[FIRMWARE_SIZE];	// firmware version string
  unsigned char ports;		// number of ports
@@ -94,6 +94,20 @@ struct port_stats {
  unsigned long long crc;
 };
 
+
+struct igmp_conf {
+ bool enable;
+ unsigned short vlan;
+ bool validate;
+ bool block;
+};
+
+
+struct cabletest {
+ char port;
+ int v1;
+ int v2;
+};
 
 
 
@@ -203,6 +217,25 @@ int ngadmin_restart (struct ngadmin *nga) EXPORT;
 // 
 int ngadmin_defaults (struct ngadmin *nga) EXPORT;
 
+
+// 
+int ngadmin_getMirror (struct ngadmin *nga, char *ports) EXPORT;
+
+
+// 
+int ngadmin_setMirror (struct ngadmin *nga, const char *ports) EXPORT;
+
+
+// 
+int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic) EXPORT;
+
+
+// 
+int ngadmin_setIGMPConf (struct ngadmin *nga, const struct igmp_conf *ic) EXPORT;
+
+
+// 
+int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) EXPORT;
 
 
 

@@ -129,10 +129,12 @@ int main (int argc, char **argv) {
   {"force-interface", no_argument, NULL, 'f'}, 
   {"interface", required_argument, NULL, 'i'}, 
   {"help", no_argument, NULL, 'h'}, 
+  {"timeout", required_argument, NULL, 't'}, 
   {0, 0, 0, 0}
  };
  char *line, *com[MAXCOM];
  const char *iface="eth0";
+ float timeout=0.f;
  bool kb=false, force=false;
  struct ngadmin *nga=NULL;
  struct timeval tv;
@@ -143,7 +145,7 @@ int main (int argc, char **argv) {
  
  opterr=0;
  
- while ( (n=getopt_long(argc, argv, "bfi:h", opts, NULL))!=-1 ) {
+ while ( (n=getopt_long(argc, argv, "bfi:ht:", opts, NULL))!=-1 ) {
   switch ( n ) {
    
    case 'b':
@@ -161,6 +163,10 @@ int main (int argc, char **argv) {
    case 'h':
     printf("Usage: %s [-b] [-f] [-i <interface>]\n", argv[0]);
     goto end;
+   
+   case 't':
+    timeout=strtof(optarg, NULL);
+   break;
    
    case '?':
     printf("Unknown option: \"%s\"\n", argv[optind-1]);
@@ -187,9 +193,11 @@ int main (int argc, char **argv) {
  }
  
  // set timeout
- tv.tv_sec=3;
- tv.tv_usec=0;
- ngadmin_setTimeout(nga, &tv);
+ if ( timeout>0.f ) {
+  tv.tv_sec=(int)timeout;
+  tv.tv_usec=(int)((timeout-(float)tv.tv_sec)*1e6f);
+  ngadmin_setTimeout(nga, &tv);
+ }
  
  
  if ( kb && ngadmin_setKeepBroadcasting(nga, true)!=ERR_OK ) goto end;

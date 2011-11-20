@@ -124,10 +124,63 @@ static bool do_bitrate_show (int nb UNUSED, const char **com UNUSED, struct ngad
 
 
 // =============================================================================
+// cabletest
+
+
+static bool do_cabletest (int nb, const char **com, struct ngadmin *nga) {
+ 
+ bool ret=true;
+ const struct swi_attr *sa;
+ struct cabletest *ct=NULL;
+ int i, j=0, k=0;
+ 
+ 
+ if ( nb<1 ) {
+  printf("Usage: cabletest <port1> [<port2> ...]\n");
+  goto end;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ ct=malloc(sa->ports*sizeof(struct cabletest));
+ memset(ct, 0, sa->ports*sizeof(struct cabletest));
+ 
+ while ( k<nb ) {
+  ct[j].port=strtol(com[k++], NULL, 0);
+  if ( ct[j].port>=1 && ct[j].port<=sa->ports ) ++j;
+ }
+ 
+ i=ngadmin_cabletest(nga, ct, j);
+ if ( i<0 ) {
+  printErrCode(i);
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ for (i=0; i<j; ++i) {
+  printf("port %i: %08X %08X\n", ct[i].port, ct[i].v1, ct[i].v2);
+ }
+ 
+ 
+ end:
+ free(ct);
+ 
+ return ret;
+ 
+}
+
+
+
+// =============================================================================
 // defaults
 
 
-static bool do_defaults (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga UNUSED) {
+static bool do_defaults (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i, ret=true;
  const struct swi_attr *sa;
@@ -214,6 +267,78 @@ static bool do_firmware_upgrade (int nb, const char **com UNUSED, struct ngadmin
 
 
 // =============================================================================
+// igmp
+
+
+static bool do_igmp_set (int nb, const char **com, struct ngadmin *nga) {
+ 
+ int i;
+ struct igmp_conf ic;
+ 
+ 
+ if ( nb!=4 ) {
+  printf("Usage: igmp set <enable> <vlan> <validate> <block>\n");
+  return false;
+ }
+ 
+ if ( ngadmin_getCurrentSwitch(nga)==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ ic.enable=strtol(com[0], NULL, 0);
+ ic.vlan=strtol(com[1], NULL, 0);
+ ic.validate=strtol(com[2], NULL, 0);
+ ic.block=strtol(com[3], NULL, 0);
+ 
+ i=ngadmin_setIGMPConf(nga, &ic);
+ printErrCode(i);
+ 
+ 
+ return true;
+ 
+}
+
+
+
+static bool do_igmp_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+ 
+ int i;
+ const struct swi_attr *sa;
+ struct igmp_conf ic;
+ bool ret=true;
+ 
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ i=ngadmin_getIGMPConf(nga, &ic);
+ if ( i!=ERR_OK ) {
+  printErrCode(i);
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ printf("IGMP snooping enabled: %s\n", ic.enable ? "yes" : "no" );
+ printf("IGMP snooping vlan: %u\n", ic.vlan);
+ printf("Validate IGMPv3 headers: %s\n", ic.validate ? "yes" : "no" );
+ printf("Block unknown multicast addresses: %s\n", ic.block ? "yes" : "no" );
+ 
+ 
+ 
+ end:
+ 
+ return ret;
+ 
+}
+
+
+
+// =============================================================================
 // list
 
 
@@ -252,6 +377,136 @@ static bool do_login (int nb, const char **com, struct ngadmin *nga) {
  i=ngadmin_login(nga, i);
  printErrCode(i);
  
+ 
+ return true;
+ 
+}
+
+
+
+// =============================================================================
+// mirror
+
+
+static bool do_mirror_disable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+ 
+ int i;
+ 
+ 
+ if ( ngadmin_getCurrentSwitch(nga)==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ 
+ i=ngadmin_setMirror(nga, NULL);
+ printErrCode(i);
+ 
+ 
+ return true;
+ 
+}
+
+
+
+static bool do_mirror_set (int nb, const char **com, struct ngadmin *nga) {
+ 
+ const struct swi_attr *sa;
+ char *ports=NULL;
+ bool ret=true;
+ int i, k=0;
+ 
+ 
+ if ( nb<3 ) {
+  printf("Usage: mirror set <destination port> clone <port1> [<port2> ...]\n");
+  goto end;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ ports=malloc((sa->ports+1)*sizeof(char));
+ memset(ports, 0, sa->ports+1);
+ 
+ ports[0]=strtol(com[k++], NULL, 0);
+ if ( ports[0]<1 || ports[0]>sa->ports || strcasecmp(com[k++], "clone")!=0 ) {
+  printf("syntax error\n");
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ while ( k<nb ) {
+  i=strtol(com[k++], NULL, 0);
+  if ( i<1 || i>sa->ports ) {
+   printf("port out of range\n");
+   ret=false;
+   goto end;
+  } else if ( i==ports[0] ) {
+   printf("destination port cannot be in port list\n");
+   ret=false;
+   goto end;
+  }
+  ports[i]=1;
+ }
+ 
+ 
+ i=ngadmin_setMirror(nga, ports);
+ printErrCode(i);
+ 
+ 
+ end:
+ free(ports);
+ 
+ return true;
+ 
+}
+
+
+
+static bool do_mirror_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+ 
+ const struct swi_attr *sa;
+ char *ports=NULL;
+ int i;
+ 
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ 
+ ports=malloc((sa->ports+1)*sizeof(char));
+ 
+ i=ngadmin_getMirror(nga, ports);
+ if ( i!=ERR_OK ) {
+  printErrCode(i);
+  goto end;
+ }
+ 
+ if ( ports[0]==0 ) {
+  printf("port mirroring is disabled\n");
+  goto end;
+ }
+ 
+ printf("destination: %i\n", ports[0]);
+ printf("ports: ");
+ for (i=1; i<=sa->ports; ++i) {
+  if ( ports[i] ) {
+   printf("%i ", i);
+  }
+ }
+ printf("\n");
+ 
+ 
+ 
+ end:
+ free(ports);
  
  return true;
  
@@ -901,7 +1156,7 @@ COM_ROOT_START(coms)
   COM_TERM(show, do_bitrate_show, false)
  COM_END
  
- COM_TERM(cabletest, NULL, true)
+ COM_TERM(cabletest, do_cabletest, true)
  
  COM_TERM(defaults, do_defaults, false)
  
@@ -911,8 +1166,8 @@ COM_ROOT_START(coms)
  COM_END
  
  COM_START(igmp)
-  COM_TERM(set, NULL, false)
-  COM_TERM(show, NULL, false)
+  COM_TERM(set, do_igmp_set, true)
+  COM_TERM(show, do_igmp_show, false)
  COM_END
  
  COM_TERM(list, do_list, false)
@@ -920,10 +1175,9 @@ COM_ROOT_START(coms)
  COM_TERM(login, do_login, true)
  
  COM_START(mirror)
-  COM_TERM(enable, NULL, false)
-  COM_TERM(disable, NULL, false)
-  COM_TERM(set, NULL, true)
-  COM_TERM(show, NULL, false)
+  COM_TERM(disable, do_mirror_disable, false)
+  COM_TERM(set, do_mirror_set, true)
+  COM_TERM(show, do_mirror_show, false)
  COM_END
  
  COM_START(name)

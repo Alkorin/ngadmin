@@ -189,7 +189,7 @@ struct attr* newIntAttr (unsigned short attr, int value) {
  
  int *v=malloc(sizeof(int));
  
- *v=value;
+ *v=htonl(value);
  
  return newAttr(attr, sizeof(int), v);
  
@@ -209,10 +209,9 @@ void freeAttr (struct attr *at) {
 
 
 
-// ------------------------------------------------------------------------------------------
-List* extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error) {
+// -----------------------------------------------------------------------------------------------------
+void extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error, List *attr) {
  
- List *l;
  struct attr *at;
  
  
@@ -223,8 +222,6 @@ List* extractPacketAttributes (struct ng_packet *np, char *error, unsigned short
  if ( attr_error!=NULL ) {
   *attr_error=ntohs(np->nh->attr);
  }
- 
- l=createEmptyList();
  
  while ( getPacketTotalSize(np)<np->maxlen ) {
   
@@ -244,7 +241,7 @@ List* extractPacketAttributes (struct ng_packet *np, char *error, unsigned short
    memcpy(at->data, np->ah->data, at->size);
   }
   
-  pushBackList(l, at);
+  pushBackList(attr, at);
   
   if ( at->attr==ATTR_END ) {
    break;
@@ -254,8 +251,6 @@ List* extractPacketAttributes (struct ng_packet *np, char *error, unsigned short
   
  }
  
- 
- return l;
  
 }
 
