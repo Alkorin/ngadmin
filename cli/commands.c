@@ -462,7 +462,7 @@ static bool do_mirror_set (int nb, const char **com, struct ngadmin *nga) {
  end:
  free(ports);
  
- return true;
+ return ret;
  
 }
 
@@ -585,6 +585,85 @@ static bool do_name_clear (int nb UNUSED, const char **com UNUSED, struct ngadmi
 
 
 // =============================================================================
+// netconf
+
+
+static bool do_netconf_set (int nb, const char **com, struct ngadmin *nga) {
+ 
+ int i, k;
+ const struct swi_attr *sa;
+ struct net_conf nc;
+ bool ret=true;
+ 
+ 
+ if ( nb==0 ) {
+  printf("Usage: netconf set [dhcp yes|no] [ip <ip>] [mask <mask>] [gw <gw>]\n");
+  return false;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ 
+ memset(&nc, 0, sizeof(struct net_conf));
+ 
+ for (k=0; k<nb; k+=2) {
+  
+  if ( strcasecmp(com[k], "dhcp")==0 ) {
+   if ( strcasecmp(com[k+1], "yes")==0 ) {
+    nc.dhcp=true;
+   } else if ( strcasecmp(com[k+1], "no")==0 ) {
+    nc.dhcp=false;
+   } else {
+    printf("Incorrect DHCP value\n");
+    ret=false;
+    goto end;
+   }
+   
+  } else if ( strcasecmp(com[k], "ip")==0 ) {
+   if ( inet_aton(com[k+1], &nc.ip)==0 ) {
+    printf("Incorrect IP value\n");
+    ret=false;
+    goto end;
+   }
+   
+  } else if ( strcasecmp(com[k], "mask")==0 ) {
+   if ( inet_aton(com[k+1], &nc.netmask)==0 ) { // TODO: check if it is a correct mask
+    printf("Incorrect mask value\n");
+    ret=false;
+    goto end;
+   }
+   
+  } else if ( strcasecmp(com[k], "gw")==0 ) {
+   if ( inet_aton(com[k+1], &nc.gw)==0 ) {
+    printf("Incorrect gateway value\n");
+    ret=false;
+    goto end;
+   }
+   
+  }
+  
+ }
+ 
+ 
+ i=ngadmin_setNetConf(nga, &nc);
+ if ( i!=ERR_OK ) {
+  printErrCode(i);
+  ret=false;
+ }
+ 
+ 
+ end:
+ 
+ return ret;
+ 
+}
+
+
+
+// =============================================================================
 // password
 
 
@@ -595,7 +674,7 @@ static bool do_password_change (int nb, const char **com, struct ngadmin *nga) {
  
  
  if ( nb!=1 ) {
-  printf("Usage: password set <value>\n");
+  printf("Usage: password change <value>\n");
   return false;
  }
  
@@ -1147,6 +1226,102 @@ static bool do_tree (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga
 
 
 // =============================================================================
+// vlan
+
+
+static char vlan_char (int t) {
+ 
+ switch ( t ) {
+  case VLAN_TAGGED: return 'T';
+  case VLAN_UNTAGGED: return 'U'; 
+  case VLAN_NO: return ' ';
+  default: return '?';
+ }
+ 
+}
+
+
+static bool print_vlan_dot_adv (struct ngadmin *nga) {
+ 
+ char buffer[512], *b=buffer;
+ const struct swi_attr *sa;
+ int i, t;
+ 
+ 
+ sa=ngadmin_getCurrentSwitch(nga);
+ 
+ t=sizeof(buffer);
+ i=ngadmin_getVLANDotConf(nga, buffer, &t);
+ if ( i!=ERR_OK ) {
+  printErrCode(i);
+  return false;
+ }
+ 
+ printf("Ports configuration: \n");
+ printf("VLAN\t");
+ for (i=1; i<=sa->ports; ++i) {
+  printf("%i\t", i);
+ }
+ putchar('\n');
+ 
+ while ( b-buffer<t ) {
+  printf("%u\t", *(unsigned short*)b);b+=2;
+  for (i=1; i<=sa->ports; ++i) {
+   printf("%c\t", vlan_char(*b++));
+  }
+  putchar('\n');
+ }
+ 
+ 
+ return true;
+ 
+}
+
+
+static bool do_vlan_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
+ 
+ int i, t, ret=true;
+ 
+ 
+ if ( ngadmin_getCurrentSwitch(nga)==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ if ( (i=ngadmin_getVLANType(nga, &t))!=ERR_OK ) {
+  printErrCode(i);
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ printf("VLAN type: ");
+ switch ( t ) {
+  case VLAN_DISABLED: printf("disabled\n"); break;
+  case VLAN_PORT_BASIC: printf("port basic\n"); break;
+  case VLAN_PORT_ADV: printf("port advanced\n"); break;
+  case VLAN_DOT_BASIC: printf("802.1Q basic\n"); break;
+  
+  case VLAN_DOT_ADV:
+   printf("802.1Q advanced\n\n");
+   ret=print_vlan_dot_adv(nga);
+  break;
+  
+  default: printf("unknown (%i)\n", t);
+ }
+ 
+ 
+ 
+ end:
+ 
+ return ret;
+ 
+}
+
+
+
+// =============================================================================
 
 
 COM_ROOT_START(coms)
@@ -1187,8 +1362,7 @@ COM_ROOT_START(coms)
  COM_END
  
  COM_START(netconf)
-  COM_TERM(show, NULL, false)
-  COM_TERM(set, NULL, true)
+  COM_TERM(set, do_netconf_set, true)
  COM_END
  
  COM_START(password)
@@ -1226,7 +1400,7 @@ COM_ROOT_START(coms)
  COM_TERM(tree, do_tree, false)
  
  COM_START(vlan)
-  COM_TERM(show, NULL, false)
+  COM_TERM(show, do_vlan_show, false)
   COM_TERM(mode, NULL, true)
  COM_END
  

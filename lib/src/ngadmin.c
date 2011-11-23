@@ -589,7 +589,11 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) {
  List *attr;
  ListNode *ln;
  struct attr *at;
- int ret=ERR_OK, i;
+ int ret=ERR_OK;
+ struct {
+  char port;
+  int bitrate;
+ } __attribute__((packed)) *p;
  
  
  if ( nga==NULL || ports==NULL ) {
@@ -609,10 +613,12 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) {
  
  for (ln=attr->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
-  if ( at->attr==ATTR_BITRATE_INPUT && at->size>=5 && (i=*(char*)(at->data)-1)>=0 && i<nga->current->ports ) {
-   ports[i*2+0]=ntohl(*(int*)(1+(char*)at->data));
-  } else if ( at->attr==ATTR_BITRATE_OUTPUT && at->size>=5 && (i=*(char*)(at->data)-1)>=0 && i<nga->current->ports ) {
-   ports[i*2+1]=ntohl(*(int*)(1+(char*)at->data));
+  p=at->data;
+  if ( at->size<sizeof(*p) || p->port<1 || p->port>nga->current->ports ) continue;
+  if ( at->attr==ATTR_BITRATE_INPUT ) {
+   ports[(p->port-1)*2+0]=ntohl(p->bitrate);
+  } else if ( at->attr==ATTR_BITRATE_OUTPUT ) {
+   ports[(p->port-1)*2+1]=ntohl(p->bitrate);
   }
  }
  
@@ -872,7 +878,7 @@ int ngadmin_getMirror (struct ngadmin *nga, char *ports) {
  for (ln=attr->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
   p=at->data;
-  if ( at->attr==ATTR_MIRROR && at->size>=2+sa->ports/8 && p[0]<=nga->current->ports ) {
+  if ( at->attr==ATTR_MIRROR && at->size>=3 && p[0]<=nga->current->ports ) {
    ports[0]=p[0];
    for (i=1; i<=sa->ports; ++i) { // FIXME: if ports>8
     ports[i]=(p[2]>>(sa->ports-i))&1;
@@ -1115,6 +1121,146 @@ int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) {
  return ret;
  
 }
+
+
+
+// --------------------------------------------------------------------
+int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) {
+ 
+ List *attr;
+ struct swi_attr *sa;
+ int ret=ERR_OK;
+ 
+ 
+ if ( nga==NULL || nc==NULL ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ 
+ if ( nc->dhcp ) {
+  pushBackList(attr, newByteAttr(ATTR_DHCP, 1));
+ } else {
+  pushBackList(attr, newByteAttr(ATTR_DHCP, 0));
+  if ( nc->ip.s_addr!=0 ) pushBackList(attr, newAddrAttr(ATTR_IP, nc->ip));
+  if ( nc->netmask.s_addr!=0 ) pushBackList(attr, newAddrAttr(ATTR_NETMASK, nc->netmask));
+  if ( nc->gw.s_addr!=0 ) pushBackList(attr, newAddrAttr(ATTR_GATEWAY, nc->gw));
+ }
+ 
+ if ( (ret=writeRequest(nga, attr))!=ERR_OK ) {
+  goto end;
+ }
+ 
+ 
+ if ( nc->dhcp ) {
+  sa->nc.dhcp=true;
+ } else {
+  memcpy(&sa->nc, nc, sizeof(struct net_conf));
+ }
+ 
+ 
+ end:
+ 
+ return ret;
+ 
+}
+
+
+
+// --------------------------------------------------
+int ngadmin_getVLANType (struct ngadmin *nga, int *t) {
+ 
+ List *attr;
+ ListNode *ln;
+ struct attr *at;
+ int ret=ERR_OK;
+ 
+ 
+ if ( nga==NULL || t==NULL ) {
+  return ERR_INVARG;
+ } else if ( nga->current==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newEmptyAttr(ATTR_VLAN_TYPE));
+ if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
+  goto end;
+ }
+ 
+ 
+ for (ln=attr->first; ln!=NULL; ln=ln->next) {
+  at=ln->data;
+  if ( at->attr==ATTR_VLAN_TYPE && at->size>=1 ) {
+   *t= (int)*(char*)at->data ;
+   break;
+  }
+ }
+ 
+ 
+ end:
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ return ret;
+ 
+}
+
+
+
+// ------------------------------------------------------------------
+int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
+ 
+ List *attr;
+ ListNode *ln;
+ struct attr *at;
+ struct swi_attr *sa;
+ int ret=ERR_OK, i;
+ char *b=buf, *p=NULL;
+ 
+ 
+ if ( nga==NULL || buf==NULL || len==NULL || *len<=0 ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newEmptyAttr(ATTR_VLAN_DOT_CONF));
+ if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
+  goto end;
+ }
+ 
+ 
+ for (ln=attr->first; ln!=NULL; ln=ln->next) {
+  at=ln->data;
+  p=at->data;
+  if ( (b-buf)+2+sa->ports>*len ) break; // no more room
+  if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
+   *(unsigned short*)b=ntohs(*(unsigned short*)p);b+=2;
+   for (i=1; i<=sa->ports; ++i) {
+    if ( (p[3]>>(sa->ports-i))&1 ) *b++=VLAN_TAGGED; // tagged
+    else if ( (p[2]>>(sa->ports-i))&1 ) *b++=VLAN_UNTAGGED; // untagged
+    else *b++=VLAN_NO;
+   }
+  }
+ }
+ 
+ *len=b-buf;
+ 
+ 
+ end:
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ return ret;
+ 
+}
+
+
 
 
 

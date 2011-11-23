@@ -18,17 +18,16 @@
 
 
 struct ng_header {
- char unk1; // always 1
- char code;
- char error;
- char unk2; // always 0
- unsigned short attr; // attribute code which caused error
- char unk3[2]; // always 0
- char client_mac[ETH_ALEN];
- char switch_mac[ETH_ALEN];
- unsigned int seqnum;
- char proto_id[4]; // always "NSDP"
- char unk4[4]; // always 0
+ char unk1;			// always 1, maybe version
+ char code;			// request code: read request, read reply, write request, write reply
+ unsigned short error;		// error code, 0 when no error
+ unsigned short attr; 		// attribute code which caused error, 0 when no error
+ char unk2[2]; 			// always 0, unknown
+ char client_mac[ETH_ALEN];	// client MAC address
+ char switch_mac[ETH_ALEN];	// switch MAC address
+ unsigned int seqnum;		// sequence number
+ char proto_id[4]; 		// always "NSDP", maybe short for "Netgear Switch Description Protocol"
+ char unk3[4]; 			// always 0, unknown
  char data[0];
 } __attribute__((packed)) ;
 
@@ -56,8 +55,6 @@ struct attr {
 };
 
 
-
-extern const unsigned short helloRequest[];
 
 extern const struct ether_addr nullMac;
 
@@ -100,13 +97,19 @@ struct attr* newAttr (unsigned short attr, unsigned short size, void *data);
 struct attr* newByteAttr (unsigned short attr, unsigned char value);
 
 // 
+struct attr* newShortAttr (unsigned short attr, short value);
+
+// 
 struct attr* newIntAttr (unsigned short attr, int value);
+
+// 
+struct attr* newAddrAttr (unsigned short attr, struct in_addr value);
 
 // 
 void freeAttr (struct attr *at);
 
 // 
-void extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error, List *attr);
+void extractPacketAttributes (struct ng_packet *np, unsigned short *error, unsigned short *attr_error, List *attr);
 
 // 
 void extractSwitchAttributes (struct swi_attr *sa, const List *l);

@@ -82,12 +82,10 @@ int forceInterface (struct ngadmin *nga) {
  int ret;
  
  
- 
  /*
  As described bellow, when you have multiple interfaces, this forces the packet 
  to go to a particular interface. 
  */
- ret=1;
  if ( (ret=setsockopt(nga->sock, SOL_SOCKET, SO_BINDTODEVICE, nga->iface, strlen(nga->iface)+1))<0 ) {
   perror("setsockopt(SO_BINDTODEVICE)");
   return ret;
@@ -172,8 +170,8 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
 
 
 
-// ---------------------------------------------------------------------------------------------------
-int recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *attr_error, List *attr) {
+// -------------------------------------------------------------------------------------------------------------
+int recvNgPacket (struct ngadmin *nga, char code, unsigned short *error, unsigned short *attr_error, List *attr) {
  
  char buffer[1500];
  struct ng_packet np;
@@ -217,8 +215,7 @@ int recvNgPacket (struct ngadmin *nga, char code, char *error, unsigned short *a
 int readRequest (struct ngadmin *nga, List *attr) {
  
  int i, ret=ERR_OK;
- unsigned short attr_error;
- char err;
+ unsigned short err, attr_error;
  
  
  if ( nga==NULL ) {
@@ -238,7 +235,7 @@ int readRequest (struct ngadmin *nga, List *attr) {
   ret=ERR_NET;
  }
  
- if ( err==7 && attr_error==ATTR_PASSWORD ) {
+ if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
   ret=ERR_BADPASS;
   goto end;
  }
@@ -257,8 +254,7 @@ int readRequest (struct ngadmin *nga, List *attr) {
 int writeRequest (struct ngadmin *nga, List *attr) {
  
  int i, ret=ERR_OK;
- unsigned short attr_error;
- char err;
+ unsigned short err, attr_error;
  
  
  if ( nga==NULL ) {
@@ -291,10 +287,12 @@ int writeRequest (struct ngadmin *nga, List *attr) {
   goto end;
  }
  
- if ( err==7 && attr_error==ATTR_PASSWORD ) {
+ if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
   ret=ERR_BADPASS;
   goto end;
  }
+ 
+ // err==0x0500
  
  
  end:

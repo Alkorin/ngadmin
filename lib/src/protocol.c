@@ -50,11 +50,7 @@ bool validateNgHeader (const struct ng_header *nh, char code, const struct ether
   return false;
  }
  
- if ( nh->unk2!=0 ) {
-  return false;
- }
- 
- if ( *(unsigned short*)nh->unk3!=0 ) {
+ if ( *(unsigned short*)nh->unk2!=0 ) {
   return false;
  }
  
@@ -70,7 +66,7 @@ bool validateNgHeader (const struct ng_header *nh, char code, const struct ether
   return false;
  }
  
- if ( *(unsigned int*)nh->unk4!=0 ) {
+ if ( *(unsigned int*)nh->unk3!=0 ) {
   return false;
  }
  
@@ -184,6 +180,19 @@ struct attr* newByteAttr (unsigned short attr, unsigned char value) {
 
 
 
+// ---------------------------------------------------------
+struct attr* newShortAttr (unsigned short attr, short value) {
+ 
+ short *v=malloc(sizeof(short));
+ 
+ *v=value;
+ 
+ return newAttr(attr, sizeof(short), v);
+ 
+}
+
+
+
 // -----------------------------------------------------
 struct attr* newIntAttr (unsigned short attr, int value) {
  
@@ -192,6 +201,19 @@ struct attr* newIntAttr (unsigned short attr, int value) {
  *v=htonl(value);
  
  return newAttr(attr, sizeof(int), v);
+ 
+}
+
+
+
+// -----------------------------------------------------------------
+struct attr* newAddrAttr (unsigned short attr, struct in_addr value) {
+ 
+ struct in_addr *v=malloc(sizeof(struct in_addr));
+ 
+ *v=value;
+ 
+ return newAttr(attr, sizeof(struct in_addr), v);
  
 }
 
@@ -209,19 +231,14 @@ void freeAttr (struct attr *at) {
 
 
 
-// -----------------------------------------------------------------------------------------------------
-void extractPacketAttributes (struct ng_packet *np, char *error, unsigned short *attr_error, List *attr) {
+// ---------------------------------------------------------------------------------------------------------------
+void extractPacketAttributes (struct ng_packet *np, unsigned short *error, unsigned short *attr_error, List *attr) {
  
  struct attr *at;
  
  
- if ( error!=NULL ) {
-  *error=np->nh->error;
- }
- 
- if ( attr_error!=NULL ) {
-  *attr_error=ntohs(np->nh->attr);
- }
+ if ( error!=NULL ) *error=ntohs(np->nh->error);
+ if ( attr_error!=NULL ) *attr_error=ntohs(np->nh->attr);
  
  while ( getPacketTotalSize(np)<np->maxlen ) {
   

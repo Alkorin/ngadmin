@@ -35,10 +35,15 @@
 #define SPEED_100		4
 #define SPEED_1000		5
 
+#define VLAN_DISABLED		0
 #define VLAN_PORT_BASIC		1
 #define VLAN_PORT_ADV		2
 #define VLAN_DOT_BASIC		3
 #define VLAN_DOT_ADV		4
+
+#define VLAN_NO			0
+#define VLAN_UNTAGGED		1
+#define VLAN_TAGGED		2
 
 #define QOS_PORT		1
 #define QOS_DOT			2
@@ -236,6 +241,19 @@ int ngadmin_setIGMPConf (struct ngadmin *nga, const struct igmp_conf *ic) EXPORT
 
 // 
 int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) EXPORT;
+
+
+// 
+int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) EXPORT;
+
+
+// 
+int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
+
+
+// 
+int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) EXPORT;
+
 
 
 
