@@ -255,6 +255,9 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
 int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) EXPORT;
 
 
+// 
+int ngadmin_getPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
+
 
 
 #endif

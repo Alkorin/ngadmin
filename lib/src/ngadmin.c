@@ -1218,7 +1218,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
  ListNode *ln;
  struct attr *at;
  struct swi_attr *sa;
- int ret=ERR_OK, i;
+ int ret=ERR_OK, total, i;
  char *b=buf, *p=NULL;
  
  
@@ -1228,6 +1228,9 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
   return ERR_NOTLOG;
  }
  
+ 
+ total=*len;
+ *len=0;
  
  attr=createEmptyList();
  pushBackList(attr, newEmptyAttr(ATTR_VLAN_DOT_CONF));
@@ -1239,7 +1242,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
  for (ln=attr->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
   p=at->data;
-  if ( (b-buf)+2+sa->ports>*len ) break; // no more room
+  if ( *len+2+sa->ports>total ) break; // no more room
   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
    *(unsigned short*)b=ntohs(*(unsigned short*)p);b+=2;
    for (i=1; i<=sa->ports; ++i) {
@@ -1247,10 +1250,9 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
     else if ( (p[2]>>(sa->ports-i))&1 ) *b++=VLAN_UNTAGGED; // untagged
     else *b++=VLAN_NO;
    }
+   *len+=2+sa->ports;
   }
  }
- 
- *len=b-buf;
  
  
  end:
@@ -1260,6 +1262,48 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
  
 }
 
+
+
+// -------------------------------------------------------------
+int ngadmin_getPVID (struct ngadmin *nga, unsigned short *ports) {
+ 
+ List *attr;
+ ListNode *ln;
+ struct attr *at;
+ struct swi_attr *sa;
+ int ret=ERR_OK;
+ char *p;
+ 
+ 
+ if ( nga==NULL || ports==NULL ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newEmptyAttr(ATTR_VLAN_PVID));
+ if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
+  goto end;
+ }
+ 
+ 
+ for (ln=attr->first; ln!=NULL; ln=ln->next) {
+  at=ln->data;
+  p=at->data;
+  if ( at->attr==ATTR_VLAN_PVID && at->size>=3 && p[0]>=1 && p[0]<=sa->ports ) {
+   ports[p[0]-1]=htons(*(unsigned short*)&p[1]);
+  }
+ }
+ 
+ 
+ end:
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ return ret;
+ 
+}
 
 
 

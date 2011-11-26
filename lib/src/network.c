@@ -60,6 +60,13 @@ int startNetwork (struct ngadmin *nga) {
   return ret;
  }
  
+ // prevent unicast packets from being routed
+ ret=1;
+ if ( (ret=setsockopt(nga->sock, IPPROTO_IP, IP_TTL, &ret, sizeof(ret)))<0 ) {
+  perror("setsockopt(IP_TTL)");
+  return ret;
+ }
+ 
  
  return 0;
  
@@ -232,7 +239,8 @@ int readRequest (struct ngadmin *nga, List *attr) {
  clearList(attr, (void(*)(void*))freeAttr);
  
  if ( i<0 || (i=recvNgPacket(nga, CODE_READ_REP, &err, &attr_error, attr))<0 ) {
-  ret=ERR_NET;
+  ret= ( errno==EAGAIN || errno==EWOULDBLOCK ) ? ERR_TIMEOUT : ERR_NET ;
+  goto end;
  }
  
  if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
@@ -283,7 +291,7 @@ int writeRequest (struct ngadmin *nga, List *attr) {
  clearList(attr, (void(*)(void*))freeAttr);
  
  if ( i<0 || (i=recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr))<0 ) {
-  ret=ERR_NET;
+  ret= ( errno==EAGAIN || errno==EWOULDBLOCK ) ? ERR_TIMEOUT : ERR_NET ;
   goto end;
  }
  

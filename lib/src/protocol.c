@@ -66,6 +66,10 @@ bool validateNgHeader (const struct ng_header *nh, char code, const struct ether
   return false;
  }
  
+ if ( memcmp(nh->proto_id, "NSDP", 4)!=0 ) {
+  return false;
+ }
+ 
  if ( *(unsigned int*)nh->unk3!=0 ) {
   return false;
  }
@@ -185,7 +189,7 @@ struct attr* newShortAttr (unsigned short attr, short value) {
  
  short *v=malloc(sizeof(short));
  
- *v=value;
+ *v=htons(value);
  
  return newAttr(attr, sizeof(short), v);
  

@@ -1241,6 +1241,47 @@ static char vlan_char (int t) {
 }
 
 
+static bool print_vlan_pvid (struct ngadmin *nga) {
+ 
+ unsigned short *ports=NULL;
+ const struct swi_attr *sa;
+ int i;
+ bool ret=true;
+ 
+ 
+ sa=ngadmin_getCurrentSwitch(nga);
+ 
+ ports=malloc(sa->ports*sizeof(unsigned short));
+ i=ngadmin_getPVID(nga, ports);
+ if ( i!=ERR_OK ) {
+  printErrCode(i);
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ printf("PVID: \n");
+ printf("Port\t");
+ for (i=1; i<=sa->ports; ++i) {
+  printf("%i\t", i);
+ }
+ putchar('\n');
+ 
+ printf("VLAN\t");
+ for (i=0; i<sa->ports; ++i) {
+  printf("%u\t", ports[i]);
+ }
+ putchar('\n');
+ 
+ 
+ end:
+ free(ports);
+ 
+ return ret;
+ 
+}
+
+
 static bool print_vlan_dot_adv (struct ngadmin *nga) {
  
  char buffer[512], *b=buffer;
@@ -1306,6 +1347,8 @@ static bool do_vlan_show (int nb UNUSED, const char **com UNUSED, struct ngadmin
   case VLAN_DOT_ADV:
    printf("802.1Q advanced\n\n");
    ret=print_vlan_dot_adv(nga);
+   putchar('\n');
+   ret=print_vlan_pvid(nga);
   break;
   
   default: printf("unknown (%i)\n", t);

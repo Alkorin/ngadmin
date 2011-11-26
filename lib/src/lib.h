@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <net/if.h>
 
 #include <ngadmin.h>
@@ -20,6 +21,10 @@
 #define CODE_READ_REP		2
 #define CODE_WRITE_REQ		3
 #define CODE_WRITE_REP		4
+
+#define ERROR_READONLY		3
+#define ERROR_INVALID_VALUE	5
+#define ERROR_INVALID_PASSWORD	7
 
 #define ATTR_PRODUCT		0x0001
 #define ATTR_UNK_0002		0x0002
