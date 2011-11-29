@@ -1,5 +1,6 @@
 
 p_nsdp=Proto("nsdp", "Netgear Switch Description Protocol")
+
 local f_version=ProtoField.uint8("nsdp.version", "Version", base.DEC)
 local f_code=ProtoField.uint8("nsdp.code", "Operation Code", base.DEC)
 local f_error=ProtoField.uint8("nsdp.error", "Error Code", base.DEC)
@@ -8,31 +9,11 @@ local f_clientmac=ProtoField.ether("nsdp.clientmac", "Client MAC")
 local f_switchmac=ProtoField.ether("nsdp.switchmac", "Switch MAC")
 local f_seqnum=ProtoField.uint32("nsdp.seqnum", "Sequence Number", base.DEC)
 
-local f_attr=ProtoField.uint16("", "Attribute", base.HEX)
-local f_attr_code=ProtoField.uint16("", "Attribute Code", base.HEX)
-local f_attr_length=ProtoField.uint16("", "Attribute Length", base.DEC)
-local f_attr_data=ProtoField.bytes("", "Attribute Data")
-
-local f_attr_product=ProtoField.string("", "Product")
-local f_attr_name=ProtoField.string("", "Name")
-local f_attr_mac=ProtoField.ether("", "MAC")
-local f_attr_ip=ProtoField.ipv4("", "IP")
-local f_attr_mask=ProtoField.ipv4("", "Mask")
-local f_attr_gateway=ProtoField.ipv4("", "Gateway")
-local f_attr_newpassword=ProtoField.string("", "New Password")
-local f_attr_password=ProtoField.string("", "Password")
-local f_attr_dhcp=ProtoField.bool("", "DHCP")
-local f_attr_firmver=ProtoField.string("", "Firmare Version")
-local f_attr_portscount=ProtoField.uint8("", "Ports Count", base.DEC)
-local f_attr_port=ProtoField.uint8("", "Port", base.DEC)
-local f_attr_port_status=ProtoField.uint8("", "Port Status", base.DEC)
-
 p_nsdp.fields={
- f_version, f_code, f_error, f_errattr, f_clientmac, f_switchmac, f_seqnum, 
- f_attr, f_attr_code, f_attr_length, f_attr_data, 
- f_attr_product, f_attr_name, f_attr_mac, f_attr_ip, f_attr_mask, f_attr_gateway, f_attr_newpassword, f_attr_password, f_attr_portscount, 
- f_attr_dhcp, f_attr_port, f_attr_port_status, f_attr_firmver
+ f_version, f_code, f_error, f_errattr, f_clientmac, f_switchmac, f_seqnum
 }
+
+
 
 
 
@@ -58,40 +39,179 @@ local status_codes={
 }
 
 
+local bitrates_codes={
+ [0]="unlimited", 
+ [1]="512K", 
+ [2]="1M", 
+ [3]="2M", 
+ [4]="4M", 
+ [5]="8M", 
+ [6]="16M", 
+ [7]="32M", 
+ [8]="64M", 
+ [9]="128M", 
+ [10]="256M", 
+ [11]="512M"
+}
+
+
+local vlan_type_codes={
+ [1]="port basic", 
+ [2]="port advanced", 
+ [3]="802.1Q basic", 
+ [4]="802.1Q advanced"
+}
+
+
+local qos_type_codes={
+ [1]="port based", 
+ [2]="802.1p"
+}
+
+
+local prio_codes={
+ [1]="high", 
+ [2]="medium", 
+ [3]="normal", 
+ [4]="low"
+}
 
 
 
-function dissect_port_status (buffer, offset, subtree)
+
+local function dissect_port_statistics (buffer, offset, subtree)
  
- subtree:add(f_attr_port, buffer(offset+4, 1))
- subtree:add(f_attr_port_status, buffer(offset+5, 1)):append_text(" ("..(status_codes[buffer(offset+5, 1):uint()] or "unk")..")")
+ subtree:add(buffer(offset+4, 1), string.format("Port: %i", buffer(offset+4, 1):uint()))
+ subtree:add(buffer(offset+4+1+8*0, 8), "Received:", tostring(buffer(offset+4+1+8*0, 8):uint64()))
+ subtree:add(buffer(offset+4+1+8*1, 8), "Sent: ", tostring(buffer(offset+4+1+8*1, 8):uint64()))
+ subtree:add(buffer(offset+4+1+8*5, 8), "CRC Errors:", tostring(buffer(offset+4+1+8*5, 8):uint64()))
  
 end
 
 
 
+local function dissect_port_status (buffer, offset, subtree)
+ 
+ local st=buffer(offset+5, 1):uint()
+ subtree:add(buffer(offset+4, 1), string.format("Port: %i", buffer(offset+4, 1):uint()))
+ subtree:add(buffer(offset+5, 1), string.format("Status: %i (%s)", st, status_codes[st] or "unk"))
+ 
+end
+
+
+
+local function dissect_bitrate (buffer, offset, subtree)
+ 
+ local sp=buffer(offset+5, 4):uint()
+ subtree:add(buffer(offset+4, 1), string.format("Port: %i", buffer(offset+4, 1):uint()))
+ subtree:add(buffer(offset+5, 4), string.format("Speed: %i (%s)", sp, bitrates_codes[sp] or "unk"))
+ 
+end
+
+
+local function dissect_vlan_type (buffer, offset, subtree)
+ 
+ local vt=buffer(offset+4, 1):uint()
+ subtree:add(buffer(offset+4, 1), string.format("VLAN Type: %i (%s)", vt, vlan_type_codes[vt] or "unk"))
+ 
+end
+
+
+local function parse_ports (val)
+ 
+ local ports=""
+ 
+ for i=8,1,-1 do
+  if ( val%2==1 ) then
+   ports=ports..i.." "
+  end
+  val=math.floor(val/2)
+ end
+ 
+ return ports
+ 
+end
+
+
+local function dissect_vlan_8021q_conf (buffer, offset, subtree)
+ 
+ subtree:add(buffer(offset+4, 2), string.format("VLAN: %u", buffer(offset+4, 2):uint()))
+ 
+ if ( buffer(offset+2, 2):uint()>=4 ) then
+  subtree:add(buffer(offset+6, 1), "Ports:", parse_ports(buffer(offset+6, 1):uint()))
+  subtree:add(buffer(offset+7, 1), "Tagged Ports:", parse_ports(buffer(offset+7, 1):uint()))
+ end
+ 
+end
+
+
+local function dissect_vlan_pvid (buffer, offset, subtree)
+ 
+ subtree:add(buffer(offset+4, 1), string.format("Port: %i", buffer(offset+4, 1):uint()))
+ subtree:add(buffer(offset+5, 2), string.format("VLAN: %u", buffer(offset+5, 2):uint()))
+ 
+end
+
+
+
+local function dissect_mirror (buffer, offset, subtree)
+ 
+ local op=buffer(offset+4, 1):uint()
+ 
+ if ( op==0 ) then
+  subtree:add(buffer(offset+4, 1), "Disabled")
+ else
+  subtree:add(buffer(offset+4, 1), "Output Port:", op)
+  subtree:add(buffer(offset+6, 1), "Ports:", parse_ports(buffer(offset+6, 1):uint()))
+ end
+ 
+end
+
 
 
 local attributes={
- [0x0001]={name="Product", dissect=f_attr_product}, 
- [0x0003]={name="Name", dissect=f_attr_name}, 
- [0x0004]={name="MAC", dissect=f_attr_mac}, 
- [0x0006]={name="IP", dissect=f_attr_ip}, 
- [0x0007]={name="Mask", dissect=f_attr_mask}, 
- [0x0008]={name="Gateway", dissect=f_attr_gateway}, 
- [0x0009]={name="New Password", dissect=f_attr_newpassword}, 
- [0x000A]={name="Password", dissect=f_attr_password}, 
- [0x000B]={name="DHCP", dissect=f_attr_dhcp}, 
- [0x000D]={name="Firmware Version", dissect=f_attr_firmver}, 
+ [0x0001]={name="Product", dissect="string"}, 
+ [0x0003]={name="Name", dissect="string"}, 
+ [0x0004]={name="MAC", dissect="ether"}, 
+ [0x0006]={name="IP", dissect="ipv4"}, 
+ [0x0007]={name="Mask", dissect="ipv4"}, 
+ [0x0008]={name="Gateway", dissect="ipv4"}, 
+ [0x0009]={name="New Password", dissect="string"}, 
+ [0x000A]={name="Password", dissect="string"}, 
+ [0x000B]={name="DHCP", dissect="uint"}, 
+ [0x000D]={name="Firmware Version", dissect="string"}, 
+ [0x0013]={name="Restart", dissect="uint"}, 
+ [0x0400]={name="Defaults", dissect="uint"}, 
  [0x0C00]={name="Port Status", dissect=dissect_port_status}, 
- [0x6000]={name="Ports Count", dissect=f_attr_portscount}
+ [0x1000]={name="Port Statistics", dissect=dissect_port_statistics}, 
+ [0x1400]={name="Reset Ports Statistics", dissect="uint"}, 
+ [0x1800]={name="Cabletest Do", dissect=nil}, 
+ [0x1C00]={name="Cabletest Result", dissect=nil}, 
+ [0x2000]={name="VLAN Type", dissect=dissect_vlan_type}, 
+ [0x2400]={name="VLAN Port Conf", dissect=nil}, 
+ [0x2800]={name="VLAN 802.1Q Conf", dissect=dissect_vlan_8021q_conf}, 
+ [0x2C00]={name="Destroy VLAN", dissect="uint"}, 
+ [0x3000]={name="VLAN PVID", dissect=dissect_vlan_pvid}, 
+ [0x3400]={name="QoS Type", dissect=nil}, 
+ [0x3800]={name="QoS Config", dissect=nil}, 
+ [0x4C00]={name="Input Bitrate", dissect=dissect_bitrate}, 
+ [0x5000]={name="Output Bitrate", dissect=dissect_bitrate}, 
+ [0x5400]={name="Broadcast Filtering State", dissect="uint"}, 
+ [0x5800]={name="Broadcast Filtering Bitrate", dissect=dissect_bitrate}, 
+ [0x5C00]={name="Mirror", dissect=dissect_mirror}, 
+ [0x6000]={name="Ports Count", dissect="uint"}, 
+ [0x6800]={name="IGMP Enable & VLAN", dissect=nil}, 
+ [0x6C00]={name="Block Unknown IGMP Addresses", dissect="uint"}, 
+ [0x7000]={name="Validate IGMPv3 Headers", dissect="uint"}, 
+ [0xFFFF]={name="End", dissect=nil}
 }
 
 
 
 
 
-function dissect_header (buffer, subtree)
+
+local function dissect_header (buffer, subtree)
  
  subtree:add(f_version, buffer(0, 1))
  
@@ -100,7 +220,7 @@ function dissect_header (buffer, subtree)
  local errcode=buffer(2, 1):uint()
  subtree:add(f_error, buffer(2, 1)):append_text(" ("..(error_codes[errcode] or "unknown")..")")
  
- -- print the erroneous attribute if an error occurred
+ -- add the erroneous attribute only if an error occurred
  if ( errcode~=0 ) then
   local atf=attributes[buffer(4, 2):uint()]
   subtree:add(f_errattr, buffer(4, 2)):append_text(" ("..(atf and atf.name or "unk")..")")
@@ -117,34 +237,46 @@ end
 
 
 
-function dissect_attributes (buffer, subtree)
+local function dissect_attributes (buffer, subtree)
  
  local offset=32
  
  while ( offset<buffer:len() ) do
   
+  if ( offset+4>buffer:len() ) then
+   -- no room for an attribute header, it is an error
+   subtree:add(buffer(offset), "Junk"):set_expert_flags(PI_MALFORMED, PI_ERROR)
+   break
+  end
+  
   local code=buffer(offset, 2):uint()
   local len=buffer(offset+2, 2):uint()
   local atf=attributes[code]
   
-  local attr=subtree:add(f_attr, buffer(offset, 4+len), code)
-  attr:append_text(" ("..(atf and atf.name or "unk")..")")
+  local attr=subtree:add(buffer(offset, math.min(4+len, buffer:len()-offset)), string.format("Attribute: 0x%04X (%s)", code, atf and atf.name or "unk"))
+  attr:add(buffer(offset, 2), string.format("Code: 0x%04X", code))
+  attr:add(buffer(offset+2, 2), string.format("Length: %u", len))
   
-  attr:add(f_attr_code, buffer(offset, 2))
+  if ( offset+4+len>buffer:len() ) then
+   -- attribute length is bigger than remaining packet size, it is an error
+   attr:append_text(" [malformed]")
+   attr:set_expert_flags(PI_MALFORMED, PI_ERROR)
+   break
+  end
   
-  attr:add(f_attr_length, buffer(offset+2, 2))
   
   if ( len<=0 ) then
    -- no data, display nothing
-  elseif ( atf==nil ) then
+  elseif ( atf==nil or atf.dissect==nil ) then
    -- unknown attribute, display raw bytes
-   attr:add(f_attr_data, buffer(offset+4, len))
+   attr:add(buffer(offset+4, len), "Data:", tostring(buffer(offset+4, len):bytes()))
   elseif ( type(atf.dissect)=="function" ) then
    -- custom sub-dissector for complex type
    atf.dissect(buffer, offset, attr)
   else
-   -- simple type, directly use field
-   attr:add(atf.dissect, buffer(offset+4, len))
+   -- simple type, directly show it
+   local func=assert(loadstring("return function(buffer, offset, len) return tostring(buffer(offset+4, len):"..atf.dissect.."()) end"))() -- ugly, isn't it ?
+   attr:add(buffer(offset+4, len), atf.name..":", func(buffer, offset, len))
   end
   
   offset=offset+4+len
@@ -166,7 +298,7 @@ function p_nsdp.dissector (buffer, pinfo, tree)
  dissect_header(buffer, subtree)
  
  -- stop if it is just a header
- if ( buffer:len()<=32 ) then return end
+ if ( buffer:len()==32 ) then return end
  
  local attr_list=subtree:add(buffer(32), "Attributes list")
  dissect_attributes(buffer, attr_list)

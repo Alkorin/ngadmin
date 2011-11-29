@@ -268,7 +268,10 @@ int ngadmin_login (struct ngadmin *nga, int id) {
  
  attr=createEmptyList();
  pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
- if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
+ if ( (ret=readRequest(nga, attr))==ERR_OK ) {
+  // login succeeded
+  // TODO: if keep broadcasting is disabled, connect() the UDP socket so icmp errors messages (port unreachable, TTL exceeded in transit, ...)can be received
+ } else {
   // login failed
   nga->current=NULL;
  }
@@ -959,7 +962,7 @@ int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic) {
  ATTR_IGMP_BLOCK_UNK
  ATTR_IGMP_VALID_V3
  
- Apparently, read-querying theses attributes at the same time causes the switch to reply garbage. 
+ Apparently, read-querying these attributes at the same time causes the switch to reply garbage. 
  Here we are forced to do like the official win app and send a separate request for each attribute. 
  */
  
@@ -1211,26 +1214,26 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) {
 
 
 
-// ------------------------------------------------------------------
-int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
+// ------------------------------------------------------------------------------------------------------
+int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsigned char *ports, int *nb) {
  
  List *attr;
  ListNode *ln;
  struct attr *at;
  struct swi_attr *sa;
  int ret=ERR_OK, total, i;
- char *b=buf, *p=NULL;
+ char *p=NULL;
  
  
- if ( nga==NULL || buf==NULL || len==NULL || *len<=0 ) {
+ if ( nga==NULL || vlans==NULL || ports==NULL || nb==NULL || *nb<=0 ) {
   return ERR_INVARG;
  } else if ( (sa=nga->current)==NULL ) {
   return ERR_NOTLOG;
  }
  
  
- total=*len;
- *len=0;
+ total=*nb;
+ *nb=0;
  
  attr=createEmptyList();
  pushBackList(attr, newEmptyAttr(ATTR_VLAN_DOT_CONF));
@@ -1242,15 +1245,65 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, char *buf, int *len) {
  for (ln=attr->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
   p=at->data;
-  if ( *len+2+sa->ports>total ) break; // no more room
+  if ( *nb>=sa->ports ) break; // no more room
   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
-   *(unsigned short*)b=ntohs(*(unsigned short*)p);b+=2;
    for (i=1; i<=sa->ports; ++i) {
-    if ( (p[3]>>(sa->ports-i))&1 ) *b++=VLAN_TAGGED; // tagged
-    else if ( (p[2]>>(sa->ports-i))&1 ) *b++=VLAN_UNTAGGED; // untagged
-    else *b++=VLAN_NO;
+    if ( (p[3]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_TAGGED; // tagged
+    else if ( (p[2]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_UNTAGGED; // untagged
+    else ports[i-1]=VLAN_NO;
    }
-   *len+=2+sa->ports;
+   *vlans++=ntohs(*(unsigned short*)p);
+   ports+=sa->ports;
+   ++*nb;
+  }
+ }
+ 
+ 
+ end:
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ return ret;
+ 
+}
+
+
+
+// ----------------------------------------------------------------------------------------
+int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned char *ports) {
+ 
+ List *attr;
+ ListNode *ln;
+ struct attr *at;
+ struct swi_attr *sa;
+ int ret=ERR_OK, i;
+ char *p=NULL;
+ 
+ 
+ if ( nga==NULL || ports==NULL ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newShortAttr(ATTR_VLAN_DOT_CONF, vlan));
+ if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
+  goto end;
+ }
+ 
+ 
+ for (ln=attr->first; ln!=NULL; ln=ln->next) {
+  at=ln->data;
+  p=at->data;
+  if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
+   for (i=1; i<=sa->ports; ++i) {
+    if ( (p[3]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_TAGGED; // tagged
+    else if ( (p[2]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_UNTAGGED; // untagged
+    else ports[i-1]=VLAN_NO;
+   }
+   break;
   }
  }
  

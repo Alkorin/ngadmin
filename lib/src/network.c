@@ -218,6 +218,24 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned short *error, unsigne
 
 
 
+int checkErrorCode (unsigned short err, unsigned short attr_error) {
+ 
+ 
+ if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
+  return ERR_BADPASS;
+ }
+ 
+ if ( err==0x0500 ) {
+  return ERR_INVARG;
+ }
+ 
+ 
+ return ERR_OK;
+ 
+}
+
+
+
 // ----------------------------------------------
 int readRequest (struct ngadmin *nga, List *attr) {
  
@@ -243,14 +261,12 @@ int readRequest (struct ngadmin *nga, List *attr) {
   goto end;
  }
  
- if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
-  ret=ERR_BADPASS;
-  goto end;
- }
+ 
+ // check error code
+ ret=checkErrorCode(err, attr_error);
  
  
  end:
- 
  
  return ret;
  
@@ -295,12 +311,8 @@ int writeRequest (struct ngadmin *nga, List *attr) {
   goto end;
  }
  
- if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
-  ret=ERR_BADPASS;
-  goto end;
- }
- 
- // err==0x0500
+ // check error code
+ ret=checkErrorCode(err, attr_error);
  
  
  end:
