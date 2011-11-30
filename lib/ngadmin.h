@@ -45,6 +45,8 @@
 #define VLAN_UNTAGGED		1
 #define VLAN_TAGGED		2
 
+#define VLAN_MAX		4093
+
 #define QOS_PORT		1
 #define QOS_DOT			2
 
@@ -252,6 +254,10 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
 
 
 // 
+int ngadmin_setVLANType (struct ngadmin *nga, int t) EXPORT;
+
+
+// 
 int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsigned char *ports, int *nb) EXPORT;
 
 
@@ -260,7 +266,19 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 
 
 // 
-int ngadmin_getPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
+int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsigned char *ports) EXPORT;
+
+
+// 
+int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan) EXPORT;
+
+
+// 
+int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
+
+
+// 
+int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan) EXPORT;
 
 
 

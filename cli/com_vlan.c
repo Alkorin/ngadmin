@@ -94,6 +94,41 @@ bool do_vlan_8021q_show (int nb, const char **com, struct ngadmin *nga) {
 
 
 
+bool do_vlan_8021q_vlan_del (int nb, const char **com, struct ngadmin *nga) {
+ 
+ const struct swi_attr *sa;
+ unsigned short vlan;
+ int i;
+ 
+ 
+ if ( nb!=1 ) {
+  printf("Usage: vlan 8021q vlan del <vlan>\n");
+  return false;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ vlan=strtoul(com[0], NULL, 0);
+ 
+ if ( vlan<1 || vlan>VLAN_MAX ) {
+  printf("vlan out of range\n");
+  return false;
+ }
+ 
+ 
+ i=ngadmin_VLANDestroy(nga, vlan);
+ printErrCode(i);
+ 
+ 
+ return true;
+ 
+}
+
+
+
 bool do_vlan_mode_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  int i, t, ret=true;
@@ -130,6 +165,48 @@ bool do_vlan_mode_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *
 
 
 
+bool do_vlan_pvid_set (int nb, const char **com, struct ngadmin *nga) {
+ 
+ const struct swi_attr *sa;
+ unsigned char port;
+ unsigned short vlan;
+ int i;
+ 
+ 
+ if ( nb!=2 ) {
+  printf("Usage: vlan pvid set <port> <vlan>\n");
+  return false;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ port=strtoul(com[0], NULL, 0);
+ vlan=strtoul(com[1], NULL, 0);
+ 
+ if ( port<1 || port>sa->ports ) {
+  printf("port out of range\n");
+  return false;
+ }
+ 
+ if ( vlan<1 || vlan>VLAN_MAX ) {
+  printf("vlan out of range\n");
+  return false;
+ }
+ 
+ 
+ i=ngadmin_setPVID(nga, port, vlan);
+ printErrCode(i);
+ 
+ 
+ return true;
+ 
+}
+
+
+
 bool do_vlan_pvid_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  
  unsigned short *ports=NULL;
@@ -145,7 +222,7 @@ bool do_vlan_pvid_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *
  }
  
  ports=malloc(sa->ports*sizeof(unsigned short));
- i=ngadmin_getPVID(nga, ports);
+ i=ngadmin_getAllPVID(nga, ports);
  if ( i!=ERR_OK ) {
   printErrCode(i);
   ret=false;

@@ -93,7 +93,9 @@ bool do_tree (int nb, const char **com, struct ngadmin *nga);
 
 // vlan
 bool do_vlan_8021q_show (int nb, const char **com, struct ngadmin *nga);
+bool do_vlan_8021q_vlan_del (int nb, const char **com, struct ngadmin *nga);
 bool do_vlan_mode_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga);
+bool do_vlan_pvid_set (int nb, const char **com, struct ngadmin *nga);
 bool do_vlan_pvid_show (int nb, const char **com, struct ngadmin *nga);
 
 
@@ -183,7 +185,7 @@ COM_ROOT_START(coms)
    COM_TERM(show, do_vlan_8021q_show, true)
    COM_START(vlan)
     COM_TERM(add, NULL, true)
-    COM_TERM(del, NULL, true)
+    COM_TERM(del, do_vlan_8021q_vlan_del, true)
     COM_TERM(flush, NULL, true)
    COM_END
   COM_END
@@ -194,7 +196,7 @@ COM_ROOT_START(coms)
   COM_START(port)
   COM_END
   COM_START(pvid)
-   COM_TERM(set, NULL, true)
+   COM_TERM(set, do_vlan_pvid_set, true)
    COM_TERM(show, do_vlan_pvid_show, false)
   COM_END
  COM_END

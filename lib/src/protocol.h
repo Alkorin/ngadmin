@@ -60,6 +60,10 @@ extern const struct ether_addr nullMac;
 
 
 
+
+// 
+int trim (char *txt, int start);
+
 // 
 int min (int a, int b);
 

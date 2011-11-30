@@ -117,7 +117,7 @@ bool do_qos_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga) {
  }
  
  
- printf("QOS mode: ");
+ printf("QoS mode: ");
  
  if ( s==QOS_DOT ) {
   printf("802.1p\n");

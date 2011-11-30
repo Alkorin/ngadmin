@@ -1148,6 +1148,7 @@ int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) {
   pushBackList(attr, newByteAttr(ATTR_DHCP, 1));
  } else {
   pushBackList(attr, newByteAttr(ATTR_DHCP, 0));
+  // only add non-null values
   if ( nc->ip.s_addr!=0 ) pushBackList(attr, newAddrAttr(ATTR_IP, nc->ip));
   if ( nc->netmask.s_addr!=0 ) pushBackList(attr, newAddrAttr(ATTR_NETMASK, nc->netmask));
   if ( nc->gw.s_addr!=0 ) pushBackList(attr, newAddrAttr(ATTR_GATEWAY, nc->gw));
@@ -1158,10 +1159,12 @@ int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) {
  }
  
  
- if ( nc->dhcp ) {
-  sa->nc.dhcp=true;
- } else {
-  memcpy(&sa->nc, nc, sizeof(struct net_conf));
+ // update local values
+ sa->nc.dhcp=nc->dhcp;
+ if ( !nc->dhcp ) {
+  if ( nc->ip.s_addr!=0 ) sa->nc.ip=nc->ip;
+  if ( nc->netmask.s_addr!=0 ) sa->nc.netmask=nc->netmask;
+  if ( nc->gw.s_addr!=0 ) sa->nc.gw=nc->gw;
  }
  
  
@@ -1209,6 +1212,30 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) {
  destroyList(attr, (void(*)(void*))freeAttr);
  
  return ret;
+ 
+}
+
+
+
+// -------------------------------------------------
+int ngadmin_setVLANType (struct ngadmin *nga, int t) {
+ 
+ List *attr;
+ struct swi_attr *sa;
+ 
+ 
+ if ( nga==NULL || t<1 || t>4 ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newByteAttr(ATTR_VLAN_TYPE, t));
+ 
+ 
+ return writeRequest(nga, attr);
  
 }
 
@@ -1317,8 +1344,74 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 
 
 
-// -------------------------------------------------------------
-int ngadmin_getPVID (struct ngadmin *nga, unsigned short *ports) {
+// ----------------------------------------------------------------------------------------------
+int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsigned char *ports) {
+ 
+ List *attr;
+ struct swi_attr *sa;
+ int i;
+ char *p;
+ 
+ 
+ if ( nga==NULL || ports==NULL || vlan<1 || vlan>VLAN_MAX ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ 
+ attr=createEmptyList();
+ p=malloc(4);
+ *(unsigned short*)p=htons(vlan);
+ 
+ for (i=1; i<=sa->ports; ++i) {
+  if ( ports[i-1]==VLAN_TAGGED ) { // tagged
+   p[3]|=(1<<(sa->ports-i));
+  } else if ( ports[i-1]==VLAN_UNTAGGED ) { // untagged
+   p[2]|=(1<<(sa->ports-i));
+  }
+ }
+ 
+ // tagged ports must be also present in untagged ports
+ p[2]|=ports[3];
+ 
+ 
+ pushBackList(attr, newAttr(ATTR_VLAN_DOT_CONF, 4, p));
+ 
+ 
+ return writeRequest(nga, attr);
+ 
+}
+
+
+
+// ---------------------------------------------------------------
+int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan) {
+ 
+ List *attr;
+ struct swi_attr *sa;
+ 
+ 
+ if ( nga==NULL || vlan<1 || vlan>VLAN_MAX ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ pushBackList(attr, newShortAttr(ATTR_VLAN_DESTROY, vlan));
+ 
+ 
+ return writeRequest(nga, attr);
+ 
+}
+
+
+
+// ----------------------------------------------------------------
+int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) {
  
  List *attr;
  ListNode *ln;
@@ -1358,6 +1451,36 @@ int ngadmin_getPVID (struct ngadmin *nga, unsigned short *ports) {
  
 }
 
+
+
+// -------------------------------------------------------------------------------
+int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan) {
+ 
+ List *attr;
+ struct swi_attr *sa;
+ char *p;
+ 
+ 
+ if ( nga==NULL || port<1 || vlan<1 || vlan>VLAN_MAX ) {
+  return ERR_INVARG;
+ } else if ( (sa=nga->current)==NULL ) {
+  return ERR_NOTLOG;
+ } else if ( port>sa->ports ) {
+  return ERR_INVARG;
+ }
+ 
+ 
+ attr=createEmptyList();
+ p=malloc(3);
+ p[0]=port;
+ *(unsigned short*)&p[1]=htons(vlan);
+ 
+ pushBackList(attr, newAttr(ATTR_VLAN_PVID, 3, p));
+ 
+ 
+ return writeRequest(nga, attr);;
+ 
+}
 
 
 

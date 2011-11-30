@@ -9,6 +9,28 @@ const struct ether_addr nullMac={.ether_addr_octet={0, 0, 0, 0, 0, 0}};
 
 
 
+
+// ----------------------------
+int trim (char *txt, int start) {
+ 
+ char *p, c;
+ 
+ 
+ if ( txt==NULL ) {
+  return 0;
+ }
+ 
+ //for (p=txt; *p!=0; p++);
+ p=txt+start;
+ for (p--; p>=txt && ( (c=*p)==' ' || c=='\n' ); *p--=0);
+ 
+ 
+ return p-txt+1;
+ 
+}
+
+
+
 // -------------------
 int min (int a, int b) {
  return a<b ? a : b ;
@@ -287,8 +309,6 @@ void extractSwitchAttributes (struct swi_attr *sa, const List *l) {
  
  memset(sa, 0, sizeof(struct swi_attr));
  
- // FIXME: mutex lock ?
- 
  for (ln=l->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
   
@@ -297,13 +317,13 @@ void extractSwitchAttributes (struct swi_attr *sa, const List *l) {
    case ATTR_PRODUCT:
     len=min(at->size, PRODUCT_SIZE);
     memcpy(sa->product, at->data, len);
-    //trim(sa->product, len); // FIXME
+    trim(sa->product, len);
    break;
    
    case ATTR_NAME:
     len=min(at->size, NAME_SIZE);
     memcpy(sa->name, at->data, len);
-    //trim(sa->name, len); // FIXME
+    trim(sa->name, len);
    break;
    
    case ATTR_MAC:
