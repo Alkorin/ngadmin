@@ -884,7 +884,7 @@ int ngadmin_getMirror (struct ngadmin *nga, char *ports) {
   if ( at->attr==ATTR_MIRROR && at->size>=3 && p[0]<=nga->current->ports ) {
    ports[0]=p[0];
    for (i=1; i<=sa->ports; ++i) { // FIXME: if ports>8
-    ports[i]=(p[2]>>(sa->ports-i))&1;
+    ports[i]=(p[2]>>(8-i))&1;
    }
    break;
   }
@@ -924,7 +924,7 @@ int ngadmin_setMirror (struct ngadmin *nga, const char *ports) {
   p[0]=ports[0];
   for (i=1; i<=sa->ports; ++i) {
    if ( i!=p[0] ) {
-    p[2]|=(ports[i]&1)<<(sa->ports-i);
+    p[2]|=(ports[i]&1)<<(8-i);
    }
   }
  }
@@ -1274,10 +1274,10 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
   p=at->data;
   if ( *nb>=sa->ports ) break; // no more room
   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
-   for (i=1; i<=sa->ports; ++i) {
-    if ( (p[3]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_TAGGED; // tagged
-    else if ( (p[2]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_UNTAGGED; // untagged
-    else ports[i-1]=VLAN_NO;
+   for (i=0; i<sa->ports; ++i) {
+    if ( (p[3]>>(7-i))&1 ) ports[i]=VLAN_TAGGED; // tagged
+    else if ( (p[2]>>(7-i))&1 ) ports[i]=VLAN_UNTAGGED; // untagged
+    else ports[i]=VLAN_NO;
    }
    *vlans++=ntohs(*(unsigned short*)p);
    ports+=sa->ports;
@@ -1306,12 +1306,11 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
  char *p=NULL;
  
  
- if ( nga==NULL || ports==NULL ) {
+ if ( nga==NULL || vlan<1 || vlan>VLAN_MAX || ports==NULL ) {
   return ERR_INVARG;
  } else if ( (sa=nga->current)==NULL ) {
   return ERR_NOTLOG;
  }
- 
  
  
  attr=createEmptyList();
@@ -1325,10 +1324,10 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
   at=ln->data;
   p=at->data;
   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
-   for (i=1; i<=sa->ports; ++i) {
-    if ( (p[3]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_TAGGED; // tagged
-    else if ( (p[2]>>(sa->ports-i))&1 ) ports[i-1]=VLAN_UNTAGGED; // untagged
-    else ports[i-1]=VLAN_NO;
+   for (i=0; i<sa->ports; ++i) {
+    if ( (p[3]>>(7-i))&1 ) ports[i]=VLAN_TAGGED; // tagged
+    else if ( (p[2]>>(7-i))&1 ) ports[i]=VLAN_UNTAGGED; // untagged
+    else ports[i]=VLAN_NO;
    }
    break;
   }
@@ -1347,40 +1346,81 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 // ----------------------------------------------------------------------------------------------
 int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsigned char *ports) {
  
- List *attr;
+ List *attr=NULL;
+ ListNode *ln;
+ struct attr *at;
  struct swi_attr *sa;
  int i;
  char *p;
+ int ret=ERR_OK;
  
  
- if ( nga==NULL || ports==NULL || vlan<1 || vlan>VLAN_MAX ) {
+ if ( nga==NULL || vlan<1 || vlan>VLAN_MAX || ports==NULL ) {
   return ERR_INVARG;
  } else if ( (sa=nga->current)==NULL ) {
   return ERR_NOTLOG;
  }
  
  
+ // if nothing is to be changed, do nothing
+ for (i=0; i<sa->ports && ports[i]==VLAN_UNSPEC; ++i);
+ if ( i==sa->ports ) goto end;
+ 
  
  attr=createEmptyList();
+ 
  p=malloc(4);
  *(unsigned short*)p=htons(vlan);
+ *(unsigned short*)&p[2]=0;
  
- for (i=1; i<=sa->ports; ++i) {
-  if ( ports[i-1]==VLAN_TAGGED ) { // tagged
-   p[3]|=(1<<(sa->ports-i));
-  } else if ( ports[i-1]==VLAN_UNTAGGED ) { // untagged
-   p[2]|=(1<<(sa->ports-i));
+ // if all is to be changed, we do not need to read old config
+ if ( memchr(ports, VLAN_UNSPEC, sa->ports)!=NULL ) {
+  
+  attr=createEmptyList();
+  pushBackList(attr, newShortAttr(ATTR_VLAN_DOT_CONF, vlan));
+  if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
+   goto end;
+  }
+  
+  for (ln=attr->first; ln!=NULL; ln=ln->next) {
+   at=ln->data;
+   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
+    *(unsigned short*)&p[2]=*(unsigned short*)(at->data+2);
+    break;
+   }
+  }
+  
+  clearList(attr, (void(*)(void*))freeAttr);
+  
+ }
+ 
+ 
+ // apply changes
+ for (i=0; i<sa->ports; ++i) {
+  if ( ports[i]==VLAN_NO ) {
+   p[2]&=~(1<<(7-i));
+   p[3]&=~(1<<(7-i));
+  } else if ( ports[i]==VLAN_UNTAGGED ) {
+   p[2]|=(1<<(7-i));
+   p[3]&=~(1<<(7-i));
+  } else if ( ports[i]==VLAN_TAGGED ) {
+   p[2]|=(1<<(7-i));
+   p[3]|=(1<<(7-i));
   }
  }
  
- // tagged ports must be also present in untagged ports
- p[2]|=ports[3];
  
  
  pushBackList(attr, newAttr(ATTR_VLAN_DOT_CONF, 4, p));
+ ret=writeRequest(nga, attr);
+ attr=NULL;
  
  
- return writeRequest(nga, attr);
+ end:
+ destroyList(attr, (void(*)(void*))freeAttr);
+ 
+ return ret;
+ 
  
 }
 

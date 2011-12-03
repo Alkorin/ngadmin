@@ -41,6 +41,7 @@
 #define VLAN_DOT_BASIC		3
 #define VLAN_DOT_ADV		4
 
+#define VLAN_UNSPEC		0xFF
 #define VLAN_NO			0
 #define VLAN_UNTAGGED		1
 #define VLAN_TAGGED		2
@@ -118,8 +119,14 @@ struct cabletest {
 
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 // initialize NgAdmin lib
 struct ngadmin* ngadmin_init (const char *iface) EXPORT;
+
 
 // 
 int ngadmin_close (struct ngadmin *nga) EXPORT;
@@ -279,6 +286,12 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
 
 // 
 int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan) EXPORT;
+
+
+
+#ifdef __cplusplus
+}
+#endif
 
 
 

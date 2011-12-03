@@ -17,6 +17,128 @@ static char vlan_char (int t) {
 
 
 
+bool do_vlan_8021q_del (int nb, const char **com, struct ngadmin *nga) {
+ 
+ const struct swi_attr *sa;
+ unsigned short vlan;
+ int i;
+ 
+ 
+ if ( nb!=1 ) {
+  printf("Usage: vlan 8021q del <vlan>\n");
+  return false;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  return false;
+ }
+ 
+ vlan=strtoul(com[0], NULL, 0);
+ 
+ if ( vlan<1 || vlan>VLAN_MAX ) {
+  printf("vlan out of range\n");
+  return false;
+ }
+ 
+ 
+ i=ngadmin_VLANDestroy(nga, vlan);
+ printErrCode(i);
+ 
+ 
+ return true;
+ 
+}
+
+
+
+bool do_vlan_8021q_set (int nb, const char **com, struct ngadmin *nga) {
+ 
+ unsigned char *ports=NULL, p, def=VLAN_UNSPEC;
+ const struct swi_attr *sa;
+ bool ret=true;
+ unsigned short vlan;
+ int i, k=0;
+ 
+ 
+ if ( nb==0 ) {
+  printf("Usage: vlan 802.1q set <vlan> [all unspec|no|untagged|tagged] [<port1> unspec|no|untagged|tagged ...]\n");
+  ret=false;
+  goto end;
+ }
+ 
+ if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+  printf("must be logged\n");
+  ret=false;
+  goto end;
+ }
+ 
+ // read vlan
+ vlan=strtoul(com[k++], NULL, 0);
+ 
+ if ( vlan<1 || vlan>VLAN_MAX ) {
+  printf("vlan out of range\n");
+  ret=false;
+  goto end;
+ }
+ 
+ 
+ // read defaults
+ if ( k<nb-1 && strcasecmp(com[k], "all")==0 ) {
+  ++k;
+  if ( strcasecmp(com[k], "tagged")==0 ) def=VLAN_TAGGED;
+  else if ( strcasecmp(com[k], "untagged")==0 ) def=VLAN_UNTAGGED;
+  else if ( strcasecmp(com[k], "no")==0 ) def=VLAN_NO;
+  else if ( strcasecmp(com[k], "unspec")==0 ) def=VLAN_UNSPEC;
+  else {
+   printf("incorrect type\n");
+   ret=false;
+   goto end;
+  }
+  ++k;
+ }
+ 
+ ports=malloc(sa->ports*sizeof(unsigned char));
+ 
+ // apply defaults
+ memset(ports, def, sa->ports);
+ 
+ // apply port specifics
+ while ( k<nb-1 ) {
+  p=strtoul(com[k++], NULL, 0)-1;
+  if ( p>=sa->ports ) {
+   printf("port out of range\n");
+   ret=false;
+   goto end;
+  }
+  if ( strcasecmp(com[k], "tagged")==0 ) ports[p]=VLAN_TAGGED;
+  else if ( strcasecmp(com[k], "untagged")==0 ) ports[p]=VLAN_UNTAGGED;
+  else if ( strcasecmp(com[k], "no")==0 ) ports[p]=VLAN_NO;
+  else if ( strcasecmp(com[k], "unspec")==0 ) ports[p]=VLAN_UNSPEC;
+  else {
+   printf("incorrect type\n");
+   ret=false;
+   goto end;
+  }
+  ++k;
+ }
+ 
+ 
+ // set conf
+ i=ngadmin_setVLANDotConf(nga, vlan, ports);
+ printErrCode(i);
+ 
+ 
+ end:
+ free(ports);
+ 
+ 
+ return ret;
+ 
+}
+
+
+
 bool do_vlan_8021q_show (int nb, const char **com, struct ngadmin *nga) {
  
  unsigned short vl=0, *vlans=NULL;
@@ -94,32 +216,35 @@ bool do_vlan_8021q_show (int nb, const char **com, struct ngadmin *nga) {
 
 
 
-bool do_vlan_8021q_vlan_del (int nb, const char **com, struct ngadmin *nga) {
+bool do_vlan_mode_set (int nb, const char **com, struct ngadmin *nga) {
  
- const struct swi_attr *sa;
- unsigned short vlan;
- int i;
+ int mode, i;
  
  
- if ( nb!=1 ) {
-  printf("Usage: vlan 8021q vlan del <vlan>\n");
-  return false;
+ if ( nb==0 ) {
+  printf("Usage: vlan mode set <mode>\n");
+  printf("1 - basic port based\n");
+  printf("2 - advanced port based\n");
+  printf("3 - basic 802.1Q\n");
+  printf("4 - advanced 802.1Q\n");
+  return true;
  }
  
- if ( (sa=ngadmin_getCurrentSwitch(nga))==NULL ) {
+ if ( ngadmin_getCurrentSwitch(nga)==NULL ) {
   printf("must be logged\n");
   return false;
  }
  
- vlan=strtoul(com[0], NULL, 0);
  
- if ( vlan<1 || vlan>VLAN_MAX ) {
-  printf("vlan out of range\n");
+ mode=strtoul(com[0], NULL, 0);
+ 
+ if ( mode<1 || mode>4 ) {
+  printf("mode out of range\n");
   return false;
  }
  
  
- i=ngadmin_VLANDestroy(nga, vlan);
+ i=ngadmin_setVLANType(nga, mode);
  printErrCode(i);
  
  

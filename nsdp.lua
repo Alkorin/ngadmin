@@ -100,6 +100,25 @@ end
 
 
 
+local function dissect_qos_type (buffer, offset, subtree)
+ 
+ local t=buffer(offset+4, 1):uint()
+ subtree:add(buffer(offset+4, 1), string.format("QoS Type: %i (%s)", t, qos_type_codes[t] or "unk"))
+ 
+end
+
+
+
+local function dissect_qos_config (buffer, offset, subtree)
+ 
+ local p=buffer(offset+5, 1):uint()
+ subtree:add(buffer(offset+4, 1), string.format("Port: %i", buffer(offset+4, 1):uint()))
+ subtree:add(buffer(offset+5, 1), string.format("Priority: %i (%s)", p, prio_codes[p] or "unk"))
+ 
+end
+
+
+
 local function dissect_bitrate (buffer, offset, subtree)
  
  local sp=buffer(offset+5, 4):uint()
@@ -109,12 +128,14 @@ local function dissect_bitrate (buffer, offset, subtree)
 end
 
 
+
 local function dissect_vlan_type (buffer, offset, subtree)
  
  local vt=buffer(offset+4, 1):uint()
  subtree:add(buffer(offset+4, 1), string.format("VLAN Type: %i (%s)", vt, vlan_type_codes[vt] or "unk"))
  
 end
+
 
 
 local function parse_ports (val)
@@ -133,6 +154,19 @@ local function parse_ports (val)
 end
 
 
+
+local function dissect_vlan_port_conf (buffer, offset, subtree)
+ 
+ subtree:add(buffer(offset+4, 2), string.format("VLAN: %u", buffer(offset+4, 2):uint()))
+ 
+ if ( buffer(offset+2, 2):uint()>=3 ) then
+  subtree:add(buffer(offset+6, 1), "Ports:", parse_ports(buffer(offset+6, 1):uint()))
+ end
+ 
+end
+
+
+
 local function dissect_vlan_8021q_conf (buffer, offset, subtree)
  
  subtree:add(buffer(offset+4, 2), string.format("VLAN: %u", buffer(offset+4, 2):uint()))
@@ -143,6 +177,7 @@ local function dissect_vlan_8021q_conf (buffer, offset, subtree)
  end
  
 end
+
 
 
 local function dissect_vlan_pvid (buffer, offset, subtree)
@@ -169,6 +204,16 @@ end
 
 
 
+local function dissect_igmp_enablevlan (buffer, offset, subtree)
+ 
+ subtree:add(buffer(offset+4, 2), string.format("Enable: %u", buffer(offset+4, 2):uint()))
+ subtree:add(buffer(offset+6, 2), string.format("VLAN: %u", buffer(offset+6, 2):uint()))
+ 
+end
+
+
+
+
 local attributes={
  [0x0001]={name="Product", dissect="string"}, 
  [0x0003]={name="Name", dissect="string"}, 
@@ -180,6 +225,7 @@ local attributes={
  [0x000A]={name="Password", dissect="string"}, 
  [0x000B]={name="DHCP", dissect="uint"}, 
  [0x000D]={name="Firmware Version", dissect="string"}, 
+ [0x0010]={name="Firmware Upgrade", dissect="uint"}, 
  [0x0013]={name="Restart", dissect="uint"}, 
  [0x0400]={name="Defaults", dissect="uint"}, 
  [0x0C00]={name="Port Status", dissect=dissect_port_status}, 
@@ -188,19 +234,19 @@ local attributes={
  [0x1800]={name="Cabletest Do", dissect=nil}, 
  [0x1C00]={name="Cabletest Result", dissect=nil}, 
  [0x2000]={name="VLAN Type", dissect=dissect_vlan_type}, 
- [0x2400]={name="VLAN Port Conf", dissect=nil}, 
+ [0x2400]={name="VLAN Port Conf", dissect=dissect_vlan_port_conf}, 
  [0x2800]={name="VLAN 802.1Q Conf", dissect=dissect_vlan_8021q_conf}, 
  [0x2C00]={name="Destroy VLAN", dissect="uint"}, 
  [0x3000]={name="VLAN PVID", dissect=dissect_vlan_pvid}, 
- [0x3400]={name="QoS Type", dissect=nil}, 
- [0x3800]={name="QoS Config", dissect=nil}, 
+ [0x3400]={name="QoS Type", dissect=dissect_qos_type}, 
+ [0x3800]={name="QoS Config", dissect=dissect_qos_config}, 
  [0x4C00]={name="Input Bitrate", dissect=dissect_bitrate}, 
  [0x5000]={name="Output Bitrate", dissect=dissect_bitrate}, 
  [0x5400]={name="Broadcast Filtering State", dissect="uint"}, 
  [0x5800]={name="Broadcast Filtering Bitrate", dissect=dissect_bitrate}, 
  [0x5C00]={name="Mirror", dissect=dissect_mirror}, 
  [0x6000]={name="Ports Count", dissect="uint"}, 
- [0x6800]={name="IGMP Enable & VLAN", dissect=nil}, 
+ [0x6800]={name="IGMP Enable & VLAN", dissect=dissect_igmp_enablevlan}, 
  [0x6C00]={name="Block Unknown IGMP Addresses", dissect="uint"}, 
  [0x7000]={name="Validate IGMPv3 Headers", dissect="uint"}, 
  [0xFFFF]={name="End", dissect=nil}
