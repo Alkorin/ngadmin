@@ -1,7 +1,7 @@
 
 CC=gcc
-CFLAGS=-DBUILD_LIB -D_REENTRANT -I.. -W -Wall -Wextra -Os -fomit-frame-pointer -fno-strict-aliasing -fvisibility=hidden -fPIC
-LDFLAGS=-lpthread -s
+CFLAGS=-DBUILD_LIB -I.. -W -Wall -Wextra -Os -fomit-frame-pointer -fno-strict-aliasing -fvisibility=hidden -fPIC
+LDFLAGS=-s
 EXEC=../libngadmin.so
 
 SRC=$(wildcard *.c)

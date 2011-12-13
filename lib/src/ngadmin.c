@@ -1272,7 +1272,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
  for (ln=attr->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
   p=at->data;
-  if ( *nb>=sa->ports ) break; // no more room
+  if ( *nb>=total ) break; // no more room
   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
    for (i=0; i<sa->ports; ++i) {
     if ( (p[3]>>(7-i))&1 ) ports[i]=VLAN_TAGGED; // tagged
@@ -1350,9 +1350,8 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
  ListNode *ln;
  struct attr *at;
  struct swi_attr *sa;
- int i;
- char *p;
- int ret=ERR_OK;
+ char *p, fl;
+ int ret=ERR_OK, i;
  
  
  if ( nga==NULL || vlan<1 || vlan>VLAN_MAX || ports==NULL ) {
@@ -1397,15 +1396,19 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
  
  // apply changes
  for (i=0; i<sa->ports; ++i) {
-  if ( ports[i]==VLAN_NO ) {
-   p[2]&=~(1<<(7-i));
-   p[3]&=~(1<<(7-i));
-  } else if ( ports[i]==VLAN_UNTAGGED ) {
-   p[2]|=(1<<(7-i));
-   p[3]&=~(1<<(7-i));
-  } else if ( ports[i]==VLAN_TAGGED ) {
-   p[2]|=(1<<(7-i));
-   p[3]|=(1<<(7-i));
+  fl=(1<<(7-i));
+  switch ( ports[i] ) {
+   case VLAN_NO:
+    p[2]&=~fl;
+    p[3]&=~fl;
+   break;
+   case VLAN_UNTAGGED:
+    p[2]|=fl;
+    p[3]&=~fl;
+   break;
+   case VLAN_TAGGED:
+    p[2]|=fl;
+    p[3]|=fl;
   }
  }
  

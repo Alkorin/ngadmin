@@ -1,0 +1,46 @@
+
+.TH NGADMIN "1" "December 2011" "NgAdmin 0.0.2" "User Commands"
+.SH NAME
+ngadmin \- cli tool for GS10[58]E administration
+
+.SH SYNOPSIS
+ngadmin [\fIOPTIONS\fR]
+
+.SH DESCRIPTION
+
+.PP
+This is a cli tool intended for administration of Netgear switches that use NSDP. 
+Currently, only the GS105E and GS108E are concerned. 
+
+.TP
+\fB-b\fR
+Keep broadcasting even when talking with a particular switch. 
+By default, once you login on a switch, NgAdmin talks with it using unicast. 
+This prevents the password from being sent to all your network. The switch 
+still replies using broadcast, but the password is not included in the 
+replies. This function allows you to disable this feature and do like the 
+official Windows application that always use broadcast packets. 
+This also allows to configure a switch which is not on your network range 
+without forcing the interface. 
+When you enable this option, you must be aware that on every modification 
+you make, your password is broadcasted in cleartext to all your network. 
+
+
+
+.SH COMMANDS
+
+
+.SH BUGS
+Currently, firmware uptade is not implemented, because it would require much 
+more work in the library (and a TFTP client). 
+.br
+And overvall, it is quite dangerous, as it is not sure that the switch checks 
+whatever you send to it. 
+
+
+.SH AUTHOR
+Written by Hervé Boisse (h.boisse@orange.fr). 
+
+
+
+

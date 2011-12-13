@@ -14,8 +14,11 @@ List* createEmptyList (void) {
  l->first=NULL;
  l->last=NULL;
  l->count=0;
+ 
+ #ifdef MT_SAFE_LIST
  pthread_cond_init(&l->cond, NULL);
  pthread_mutex_init(&l->mutex, NULL);
+ #endif
  
  
  return l;
@@ -36,8 +39,10 @@ void destroyList (List *l, void (*freefunc)(void*)) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_destroy(&l->mutex);
  pthread_cond_destroy(&l->cond);
+ #endif
  
  for (ln=l->first; ln!=NULL; ) {
   
@@ -70,7 +75,9 @@ void pushFrontList (List *l, void* data) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  ln=malloc(sizeof(ListNode));
  ln->data=data;
@@ -86,8 +93,10 @@ void pushFrontList (List *l, void* data) {
  l->first=ln;
  l->count++;
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
  pthread_cond_broadcast(&l->cond);
+ #endif
  
 }
 
@@ -104,7 +113,9 @@ void pushBackList (List *l, void* data) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  ln=malloc(sizeof(ListNode));
  ln->data=data;
@@ -120,8 +131,10 @@ void pushBackList (List *l, void* data) {
  l->last=ln;
  l->count++;
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
  pthread_cond_broadcast(&l->cond);
+ #endif
  
 }
 
@@ -139,10 +152,14 @@ void* popFrontList (List *l) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  if ( (ln=l->first)==NULL ) {
+  #ifdef MT_SAFE_LIST
   pthread_mutex_unlock(&l->mutex);
+  #endif
   return NULL;
  }
  
@@ -158,8 +175,10 @@ void* popFrontList (List *l) {
  l->count--;
  free(ln);
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
  pthread_cond_broadcast(&l->cond);
+ #endif
  
  
  return data;
@@ -181,10 +200,14 @@ void* popBackList (List *l) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  if ( (ln=l->last)==NULL ) {
+  #ifdef MT_SAFE_LIST
   pthread_mutex_unlock(&l->mutex);
+  #endif
   return NULL;
  }
  
@@ -200,9 +223,10 @@ void* popBackList (List *l) {
  l->count--;
  free(ln);
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
  pthread_cond_broadcast(&l->cond);
- 
+ #endif
  
  
  return data;
@@ -222,7 +246,9 @@ void clearList (List *l, void (*freefunc)(void*)) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  for (ln=l->first; ln!=NULL; ) {
   
@@ -241,9 +267,10 @@ void clearList (List *l, void (*freefunc)(void*)) {
  l->last=NULL;
  l->count=0;
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
  pthread_cond_broadcast(&l->cond);
- 
+ #endif
  
 }
 
@@ -261,13 +288,17 @@ bool findAndDestroy (List *l, void* data, void (*freefunc)(void*)) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  for (ln=l->first; ln!=NULL && ln->data!=data; ln=ln->next);
  
  if ( ln==NULL ) {
   
+  #ifdef MT_SAFE_LIST
   pthread_mutex_unlock(&l->mutex);
+  #endif
   
  } else {
   
@@ -290,8 +321,10 @@ bool findAndDestroy (List *l, void* data, void (*freefunc)(void*)) {
   
   l->count--;
   
+  #ifdef MT_SAFE_LIST
   pthread_mutex_unlock(&l->mutex);
   pthread_cond_broadcast(&l->cond);
+  #endif
   
  }
  
@@ -315,14 +348,17 @@ void browseList (List *l, void (*browsefunc)(void*)) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  for (ln=l->first; ln!=NULL; ln=ln->next) {
   browsefunc(ln->data);
  }
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
- 
+ #endif
  
 }
 
@@ -340,7 +376,9 @@ void* convertToArray (List *l, size_t sz) {
  }
  
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_lock(&l->mutex);
+ #endif
  
  if ( l->count>0 ) {
   
@@ -354,7 +392,9 @@ void* convertToArray (List *l, size_t sz) {
   
  }
  
+ #ifdef MT_SAFE_LIST
  pthread_mutex_unlock(&l->mutex);
+ #endif
  
  
  return tab;

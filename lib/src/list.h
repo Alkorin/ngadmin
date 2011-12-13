@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <pthread.h>
 
+#ifdef MT_SAFE_LIST
+#include <pthread.h>
+#endif
 
 
 
@@ -22,8 +24,10 @@ struct ListNode {
 typedef struct {
  ListNode *first, *last;
  unsigned int count;
+ #ifdef MT_SAFE_LIST
  pthread_cond_t cond;
  pthread_mutex_t mutex;
+ #endif
 } List;
 
 
