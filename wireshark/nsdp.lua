@@ -34,6 +34,7 @@ local error_codes={
 
 local status_codes={
  [0]="down", 
+ [1]="10M", 
  [4]="100M", 
  [5]="1000M"
 }
@@ -246,9 +247,11 @@ local attributes={
  [0x5800]={name="Broadcast Filtering Bitrate", dissect=dissect_bitrate}, 
  [0x5C00]={name="Mirror", dissect=dissect_mirror}, 
  [0x6000]={name="Ports Count", dissect="uint"}, 
+ [0x6400]={name="Max 802.1Q VLAN Group", dissect=nil}, 
  [0x6800]={name="IGMP Enable & VLAN", dissect=dissect_igmp_enablevlan}, 
  [0x6C00]={name="Block Unknown IGMP Addresses", dissect="uint"}, 
  [0x7000]={name="Validate IGMPv3 Headers", dissect="uint"}, 
+ [0x7400]={name="TLV Bitmap", dissect=nil}, 
  [0xFFFF]={name="End", dissect=nil}
 }
 

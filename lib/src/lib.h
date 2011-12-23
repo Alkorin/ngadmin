@@ -62,11 +62,11 @@
 #define ATTR_STORM_BITRATE	0x5800
 #define ATTR_MIRROR		0x5C00
 #define ATTR_PORTS_COUNT	0x6000
-#define ATTR_UNK_6400		0x6400
+#define ATTR_MAX_VLAN		0x6400
 #define ATTR_IGMP_ENABLE_VLAN	0x6800
 #define ATTR_IGMP_BLOCK_UNK	0x6C00
 #define ATTR_IGMP_VALID_V3	0x7000
-#define ATTR_UNK_7400		0x7400
+#define ATTR_TLV_BITMAP		0x7400
 #define ATTR_END		0xFFFF
 
 
@@ -74,11 +74,13 @@
 struct ngadmin {
  // network
  int sock;			// socket
- struct sockaddr_in local;
+ struct sockaddr_in local;	// local address & port
+ struct in_addr brd;		// broadcast address
  char iface[IFNAMSIZ];		// interface
  struct timeval timeout;	// timeout
  struct ether_addr localmac;	// local MAC address
  bool keepbroad;		// keep broadcasting
+ bool globalbroad;		// use global broadcast address (255.255.255.255)
  // 
  char password[PASSWORD_MAX];	// password to use to login on switches
  struct swi_attr *swi_tab;	// array of detected switches

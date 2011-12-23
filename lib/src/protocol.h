@@ -18,9 +18,10 @@
 
 
 struct ng_header {
- char unk1;			// always 1, maybe version
+ char version;			// always 1, maybe version
  char code;			// request code: read request, read reply, write request, write reply
- unsigned short error;		// error code, 0 when no error
+ unsigned char error;		// error code, 0 when no error
+ unsigned char unk1;		// always 0, unknown
  unsigned short attr; 		// attribute code which caused error, 0 when no error
  char unk2[2]; 			// always 0, unknown
  char client_mac[ETH_ALEN];	// client MAC address
@@ -53,10 +54,6 @@ struct attr {
  unsigned short size;
  void *data;
 };
-
-
-
-extern const struct ether_addr nullMac;
 
 
 
@@ -113,7 +110,7 @@ struct attr* newAddrAttr (unsigned short attr, struct in_addr value);
 void freeAttr (struct attr *at);
 
 // 
-void extractPacketAttributes (struct ng_packet *np, unsigned short *error, unsigned short *attr_error, List *attr);
+void extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr);
 
 // 
 void extractSwitchAttributes (struct swi_attr *sa, const List *l);

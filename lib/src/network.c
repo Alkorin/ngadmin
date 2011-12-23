@@ -23,12 +23,14 @@ int startNetwork (struct ngadmin *nga) {
   return nga->sock;
  }
  
+ /*
  // get the interface IP address
  if ( (ret=ioctl(nga->sock, SIOCGIFADDR, &ifr))<0 ) {
   perror("ioctl(SIOCGIFADDR)");
   close(nga->sock);
   return ret;
  }
+ */
  /*
  Here we have a problem: when you have multiple interfaces, sending a packet to 
  255.255.255.255 may not send it to the interface you want. If you bind() to 
@@ -37,6 +39,14 @@ int startNetwork (struct ngadmin *nga) {
  setsockopt(SO_BINDTODEVICE) but this requires root priviledges. 
  */
  //local.sin_addr=(*(struct sockaddr_in*)&ifr.ifr_addr).sin_addr; // FIXME
+ 
+ // get the interface broadcast address
+ if ( (ret=ioctl(nga->sock, SIOCGIFBRDADDR, &ifr))<0 ) {
+  perror("ioctl(SIOCGIFBRDADDR)");
+  close(nga->sock);
+  return ret;
+ }
+ nga->brd=(*(struct sockaddr_in*)&ifr.ifr_addr).sin_addr;
  
  // get the interface MAC address
  if ( (ret=ioctl(nga->sock, SIOCGIFHWADDR, &ifr))<0 ) {
@@ -149,10 +159,11 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
  
  
  
+ 
  np.buffer=buffer;
  np.maxlen=sizeof(buffer);
  initNgPacket(&np);
- initNgHeader(np.nh, code, &nga->localmac, sa==NULL ? &nullMac : &sa->mac , ++nga->seq);
+ initNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , ++nga->seq);
  
  if ( attr!=NULL ) {
   for (ln=attr->first; ln!=NULL; ln=ln->next) {
@@ -163,8 +174,12 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
  
  memset(&remote, 0, sizeof(struct sockaddr_in));
  remote.sin_family=AF_INET;
- remote.sin_addr.s_addr= sa==NULL || nga->keepbroad ? htonl(INADDR_BROADCAST) : sa->nc.ip.s_addr ;
  remote.sin_port=htons(SWITCH_PORT);
+ 
+ if ( sa!=NULL && !nga->keepbroad ) remote.sin_addr=sa->nc.ip;
+ else if ( nga->globalbroad ) remote.sin_addr.s_addr=htonl(INADDR_BROADCAST);
+ else remote.sin_addr=nga->brd;
+ 
  
  if ( (ret=sendto(nga->sock, buffer, getPacketTotalSize(&np), 0, (struct sockaddr*)&remote, sizeof(struct sockaddr_in)))<0 ) {
   perror("sendto");
@@ -177,8 +192,8 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
 
 
 
-// -------------------------------------------------------------------------------------------------------------
-int recvNgPacket (struct ngadmin *nga, char code, unsigned short *error, unsigned short *attr_error, List *attr) {
+// ------------------------------------------------------------------------------------------------------------
+int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr) {
  
  char buffer[1500];
  struct ng_packet np;
@@ -218,14 +233,14 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned short *error, unsigne
 
 
 
-int checkErrorCode (unsigned short err, unsigned short attr_error) {
+int checkErrorCode (unsigned char err, unsigned short attr_error) {
  
  
- if ( err==0x0700 && attr_error==ATTR_PASSWORD ) {
+ if ( err==ERROR_INVALID_PASSWORD && attr_error==ATTR_PASSWORD ) {
   return ERR_BADPASS;
  }
  
- if ( err==0x0500 ) {
+ if ( err==ERROR_INVALID_VALUE ) {
   return ERR_INVARG;
  }
  
@@ -240,7 +255,8 @@ int checkErrorCode (unsigned short err, unsigned short attr_error) {
 int readRequest (struct ngadmin *nga, List *attr) {
  
  int i, ret=ERR_OK;
- unsigned short err, attr_error;
+ unsigned char err;
+ unsigned short attr_error;
  
  
  if ( nga==NULL ) {
@@ -278,7 +294,8 @@ int readRequest (struct ngadmin *nga, List *attr) {
 int writeRequest (struct ngadmin *nga, List *attr) {
  
  int i, ret=ERR_OK;
- unsigned short err, attr_error;
+ unsigned char err;
+ unsigned short attr_error;
  
  
  if ( nga==NULL ) {

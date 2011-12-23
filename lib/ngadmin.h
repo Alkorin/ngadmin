@@ -253,15 +253,15 @@ int ngadmin_close (struct ngadmin *nga) EXPORT;
 /**
  * Force the use of the interface. 
  * This function allows to solve two problems: 
- * - When you have multiple network interfaces, sending to the broadcast may not 
- *   send the packet on the interface you want. \n
+ * - When you have multiple network interfaces, sending to the global broadcast 
+ *   address may not send the packet on the interface you want. \n
  *   This function forces the packet to go on the interface you specified at 
  *   the library initialization. 
  * - When the switch is not in your network range, because DHCP is disabled or
  *   you started the DHCP server after the switch. \n
  *   This function allows you to ignore the routing table and consider every 
  *   address is directly reachable on the interface. \n
- *   An alternative is to use ngadmin_setKeepBroadcasting. 
+ *   An alternative is to use ngadmin_setKeepBroadcasting, or simply add a route. 
  * 
  * @warning Requires root priviledges. 
  * @see ngadmin_setKeepBroadcasting()
@@ -290,6 +290,20 @@ int ngadmin_forceInterface (struct ngadmin *nga) EXPORT;
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
 int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value) EXPORT;
+
+
+/**
+ * Use global broadcast address. 
+ * By default, NgAdmin uses the interface broadcast address. 
+ * This option forces the lib to use the global broadcast address 
+ * (255.255.255.255) instead. 
+ * @warning If you have multiple interfaces, enabling this may cause problems. 
+ * @see ngadmin_forceInterface()
+ * @param nga A pointer to the ngadmin structure. 
+ * @param value Enable or disable the use of the global broadcast address. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
+int ngadmin_useGlobalBroadcast (struct ngadmin *nga, bool value) EXPORT;
 
 
 /**
@@ -343,6 +357,19 @@ const struct swi_attr* ngadmin_getSwitchTab (struct ngadmin *nga, int *nb) EXPOR
 const struct swi_attr* ngadmin_getCurrentSwitch (struct ngadmin *nga) EXPORT;
 
 
+
+/**
+ * Upgrade the switch firmware. 
+ * This function allows you to upgrade the switch firmware. 
+ * @warning Currently not implemented. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param filename A path to the file of the new firmware to send. 
+ * @return ERR_NOTIMPL
+ **/
+int ngadmin_upgradeFirmware (struct ngadmin *nga, const char *filename) EXPORT;
+
+
 /**
  * Login on a switch. 
  * This function permits to login on a switch. 
@@ -373,7 +400,7 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports) EXPORT;
  * This changes the name of a switch. 
  * @note You must be logged on a switch. 
  * @param nga A pointer to the ngadmin structure. 
- * @param name The name string to use. 
+ * @param name The name string to use. A NULL value clears the name. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
 int ngadmin_setName (struct ngadmin *nga, const char *name) EXPORT;
@@ -485,7 +512,7 @@ int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports) EXPORT;
 
 /**
  * Get the QoS mode. 
- * Retrieve the QoS mode. 
+ * Retrieves the QoS mode. 
  * @note You must be logged on a switch. 
  * @param nga A pointer to the ngadmin structure. 
  * @param s A pointer to an integer. Must not be NULL. 
@@ -507,7 +534,7 @@ int ngadmin_setQOSMode (struct ngadmin *nga, int s) EXPORT;
 
 /**
  * Get the QoS values. 
- * Retrieve the QoS priority values for all the ports. 
+ * Retrieves the QoS priority values for all the ports. 
  * @note You must be logged on a switch. 
  * @note The switch QoS mode should be port based to use this function. 
  * @param nga A pointer to the ngadmin structure. 
@@ -559,6 +586,7 @@ int ngadmin_defaults (struct ngadmin *nga) EXPORT;
  * Get the port mirroring values. 
  * Retrieves the port mirrorring values. 
  * @note The switch QoS mode should be port based to use this function. 
+ * @note You must be logged on a switch. 
  * @param nga A pointer to the ngadmin structure.
  * @param ports A pointer to an array of chars. Must not be NULL. \n
                 The first element of the array is the output port (or 0 if port 
@@ -583,51 +611,158 @@ int ngadmin_getMirror (struct ngadmin *nga, char *ports) EXPORT;
 int ngadmin_setMirror (struct ngadmin *nga, const char *ports) EXPORT;
 
 
-// 
+/**
+ * Get the IGMP configuration. 
+ * Retrieves the IGMP & multicast configuration. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param ic A pointer to an igmp_conf structure. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic) EXPORT;
 
 
-// 
+/**
+ * Set the IGMP configuration. 
+ * Changes the IGMP configuration. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param ic A pointer to an igmp_conf structure. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_setIGMPConf (struct ngadmin *nga, const struct igmp_conf *ic) EXPORT;
 
 
-// 
+/**
+ * Perform a cable test. 
+ * Performs a cable test on one ore more ports. 
+ * @note Results are still raw values. 
+ * @note This function takes a very long time. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param ct A pointer to an array of cabletest structures. Must not be NULL. 
+ * @param nb The number of elements in the array. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) EXPORT;
 
 
-// 
+/**
+ * Set the network configuration. 
+ * Changes the network configuration. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param nc A pointer to a net_conf structure. Must not be NULL. \n
+             Only non-zero fields of the structure are taken into account. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) EXPORT;
 
 
-// 
+/**
+ * Get the VLAN type. 
+ * Retrieves the VLAN type. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param t A pointer to an integer which will receive the VLAN type. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
 
 
-// 
+/**
+ * Set the VLAN type. 
+ * Changes the VLAN type. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param t An integer which contains the new VLAN type. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_setVLANType (struct ngadmin *nga, int t) EXPORT;
 
 
-// 
+/**
+ * Get all the 802.1q VLAN configuration. 
+ * Retrieves all the VLAN configuration in 802.1q mode. 
+ * @note The switch should be in 802.1q mode. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param vlans A pointer to an array of unsigned shorts which will receive 
+ *              VLAN ids. Must not be NULL. \n
+ *              The array size must be sizeof(unsigned short)*(*nb). 
+ * @param ports A pointer to an array of unsigned chars which will receive the 
+                802.1q configuration for each VLAN. Must not be NULL. \n
+                The array size must be sizeof(unsigned char)*ports_count*(*nb). 
+ * @param nb A pointer to an integer which contains the maximum number of 
+             elements allowed in the array. Must not be NULL. \n
+             It will receive the actual number of VLAN written in the arrays. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsigned char *ports, int *nb) EXPORT;
 
 
-// 
+/**
+ * Get the configuration of a VLAN in 802.1q mode. 
+ * Retrieves the configuration of a particular VLAN in 802.1q mode. 
+ * @note The switch should be in 802.1q mode. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param vlan The VLAN you want to get the configuration. 
+ * @param ports A pointer to an array of integers which will receive the 
+                configuration. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned char *ports) EXPORT;
 
 
-// 
+/**
+ * Set the configuration if a VLAN in 802.1q mode. 
+ * Changes the configuration of a particular VLAN in 802.1q mode. 
+ * @note The switch should be in 802.1q mode. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param vlan The VLAN you want to change the configuration. 
+ * @param ports A pointer to an array of integers which contain the 
+                configuration. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsigned char *ports) EXPORT;
 
 
-// 
+/**
+ * Destroy a VLAN in 802.1q mode. 
+ * Destroys a particular VLAN in 802.1q mode. 
+ * @note The switch should be in 802.1q mode. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param vlan The VLAN you want to destroy. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan) EXPORT;
 
 
-// 
+/**
+ * Get the PVID values. 
+ * Retrieves the PVID values of all the ports. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param ports A pointer to an array of unsigned shorts which will receive the 
+ *              PVID values. Must not be NULL. \n
+ *              The array size must be sizeof(unsigned short)*ports_count. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
 
 
-// 
+/**
+ * Set the PVID of one port. 
+ * Changes the PVID of one port. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param port The port you want to change PVID. 
+ * @param vlan The new PVID value. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
 int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan) EXPORT;
 
 

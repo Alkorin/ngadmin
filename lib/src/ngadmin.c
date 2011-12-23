@@ -94,6 +94,24 @@ int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value) {
 
 
 
+// -------------------------------------------------------------
+int ngadmin_useGlobalBroadcast (struct ngadmin *nga, bool value) {
+ 
+ 
+ if ( nga==NULL ) {
+  return ERR_INVARG;
+ }
+ 
+ 
+ nga->globalbroad=value;
+ 
+ 
+ return ERR_OK;
+ 
+}
+
+
+
 // ------------------------------------------------------------
 int ngadmin_setPassword (struct ngadmin *nga, const char *pass) {
  
@@ -270,7 +288,7 @@ int ngadmin_login (struct ngadmin *nga, int id) {
  pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
  if ( (ret=readRequest(nga, attr))==ERR_OK ) {
   // login succeeded
-  // TODO: if keep broadcasting is disabled, connect() the UDP socket so icmp errors messages (port unreachable, TTL exceeded in transit, ...)can be received
+  // TODO: if keep broadcasting is disabled, connect() the UDP socket so icmp errors messages (port unreachable, TTL exceeded in transit, ...) can be received
  } else {
   // login failed
   nga->current=NULL;
@@ -280,6 +298,30 @@ int ngadmin_login (struct ngadmin *nga, int id) {
  
  
  return ret;
+ 
+}
+
+
+
+// --------------------------------------------------------------------
+int ngadmin_upgradeFirmware (struct ngadmin *nga, const char *filename) {
+ 
+ 
+ if ( nga==NULL || filename==NULL || *filename==0 ) {
+  return ERR_INVARG;
+ } else if ( nga->current==NULL ) {
+  return ERR_NOTLOG;
+ }
+ 
+ 
+ /*
+ Firmware upgrade is not yet implemented. 
+ This would require much more work and the use of a TFTP client. 
+ Overall, it could be quite dangerous, as the switch may not check the binary 
+ content sent to it. 
+ */
+ 
+ return ERR_NOTIMPL;
  
 }
 
@@ -1272,7 +1314,6 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
  for (ln=attr->first; ln!=NULL; ln=ln->next) {
   at=ln->data;
   p=at->data;
-  if ( *nb>=total ) break; // no more room
   if ( at->attr==ATTR_VLAN_DOT_CONF && at->size>=4 ) {
    for (i=0; i<sa->ports; ++i) {
     if ( (p[3]>>(7-i))&1 ) ports[i]=VLAN_TAGGED; // tagged
@@ -1281,7 +1322,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
    }
    *vlans++=ntohs(*(unsigned short*)p);
    ports+=sa->ports;
-   ++*nb;
+   if ( ++*nb>total ) break; // no more room
   }
  }
  
@@ -1375,7 +1416,6 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
  // if all is to be changed, we do not need to read old config
  if ( memchr(ports, VLAN_UNSPEC, sa->ports)!=NULL ) {
   
-  attr=createEmptyList();
   pushBackList(attr, newShortAttr(ATTR_VLAN_DOT_CONF, vlan));
   if ( (ret=readRequest(nga, attr))!=ERR_OK ) {
    goto end;
@@ -1521,7 +1561,7 @@ int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vla
  pushBackList(attr, newAttr(ATTR_VLAN_PVID, 3, p));
  
  
- return writeRequest(nga, attr);;
+ return writeRequest(nga, attr);
  
 }
 

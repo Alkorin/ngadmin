@@ -18,6 +18,7 @@ void printErrCode (int err) {
   case ERR_BADID: printf("bad switch id\n"); break;
   case ERR_INVARG: printf("invalid argument\n"); break;
   case ERR_TIMEOUT: printf("timeout\n"); break;
+  case ERR_NOTIMPL: printf("not implemented\n"); break;
   default: printf("unknown status code (%i)\n", err);
  }
  

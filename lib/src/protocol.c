@@ -4,12 +4,6 @@
 
 
 
-
-const struct ether_addr nullMac={.ether_addr_octet={0, 0, 0, 0, 0, 0}};
-
-
-
-
 // ----------------------------
 int trim (char *txt, int start) {
  
@@ -43,7 +37,7 @@ void initNgHeader (struct ng_header *nh, char code, const struct ether_addr *cli
  
  
  memset(nh, 0, sizeof(struct ng_header));
- nh->unk1=1;
+ nh->version=1;
  nh->code=code;
  
  memcpy(nh->client_mac, client_mac, ETH_ALEN);
@@ -64,11 +58,15 @@ void initNgHeader (struct ng_header *nh, char code, const struct ether_addr *cli
 bool validateNgHeader (const struct ng_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum) {
  
  
- if ( nh->unk1!=1 ) {
+ if ( nh->version!=1 ) {
   return false;
  }
  
  if ( code>0 && nh->code!=code ) {
+  return false;
+ }
+ 
+ if ( nh->unk1!=0 ) {
   return false;
  }
  
@@ -257,13 +255,13 @@ void freeAttr (struct attr *at) {
 
 
 
-// ---------------------------------------------------------------------------------------------------------------
-void extractPacketAttributes (struct ng_packet *np, unsigned short *error, unsigned short *attr_error, List *attr) {
+// --------------------------------------------------------------------------------------------------------------
+void extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr) {
  
  struct attr *at;
  
  
- if ( error!=NULL ) *error=ntohs(np->nh->error);
+ if ( error!=NULL ) *error=np->nh->error;
  if ( attr_error!=NULL ) *attr_error=ntohs(np->nh->attr);
  
  while ( getPacketTotalSize(np)<np->maxlen ) {

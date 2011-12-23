@@ -35,10 +35,7 @@ const struct TreeNode* getSubCom (char **com, int n, int *t) {
   for (next=cur->sub; next->name!=NULL && strcmp(next->name, com[i])!=0; ++next);
   
   // sub command not found, exit
-  if ( next->name==NULL ) {
-   next=NULL;
-   break;
-  }
+  if ( next->name==NULL ) break;
   
   // next command is now the current one
   cur=next;
@@ -101,7 +98,6 @@ char** my_completion (const char *text, int start, int end UNUSED) {
  int i, n;
  
  
- 
  memset(com, 0, MAXCOM*sizeof(char*));
  line=strdup(rl_line_buffer);
  line[start]=0;
@@ -113,6 +109,10 @@ char** my_completion (const char *text, int start, int end UNUSED) {
  
  if ( i<n ) compcur=NULL;
  matches=rl_completion_matches(text, my_generator);
+ 
+ for (i=0; com[i]!=NULL; ++i) {
+  free(com[i]);
+ }
  
  
  return matches;
@@ -127,6 +127,7 @@ int main (int argc, char **argv) {
  static const struct option opts[]={
   {"keep-broadcasting", no_argument, NULL, 'b'}, 
   {"force-interface", no_argument, NULL, 'f'}, 
+  {"global-broadcast", no_argument, NULL, 'g'}, 
   {"interface", required_argument, NULL, 'i'}, 
   {"help", no_argument, NULL, 'h'}, 
   {"timeout", required_argument, NULL, 't'}, 
@@ -135,7 +136,7 @@ int main (int argc, char **argv) {
  char *line, *com[MAXCOM];
  const char *iface="eth0";
  float timeout=0.f;
- bool kb=false, force=false;
+ bool kb=false, force=false, global=false;
  struct ngadmin *nga=NULL;
  struct timeval tv;
  const struct TreeNode *cur, *next;
@@ -145,7 +146,7 @@ int main (int argc, char **argv) {
  
  opterr=0;
  
- while ( (n=getopt_long(argc, argv, "bfi:ht:", opts, NULL))!=-1 ) {
+ while ( (n=getopt_long(argc, argv, "bfgi:ht:", opts, NULL))!=-1 ) {
   switch ( n ) {
    
    case 'b':
@@ -156,12 +157,16 @@ int main (int argc, char **argv) {
     force=true;
    break;
    
+   case 'g':
+    global=true;
+   break;
+   
    case 'i':
     iface=optarg;
    break;
    
    case 'h':
-    printf("Usage: %s [-b] [-f] [-i <interface>]\n", argv[0]);
+    printf("Usage: %s [-b] [-f] [-g] [-i <interface>]\n", argv[0]);
     goto end;
    
    case 't':
@@ -195,7 +200,7 @@ int main (int argc, char **argv) {
  // set timeout
  if ( timeout>0.f ) {
   tv.tv_sec=(int)timeout;
-  tv.tv_usec=(int)((timeout-(float)tv.tv_sec)*1e6f);
+  tv.tv_usec=(int)((timeout-(float)tv.tv_sec)*1.e6f);
   ngadmin_setTimeout(nga, &tv);
  }
  
@@ -203,6 +208,8 @@ int main (int argc, char **argv) {
  if ( kb && ngadmin_setKeepBroadcasting(nga, true)!=ERR_OK ) goto end;
  
  if ( force && ngadmin_forceInterface(nga)!=ERR_OK ) goto end;
+ 
+ if ( global && ngadmin_useGlobalBroadcast(nga, true)!=ERR_OK ) goto end;
  
  
  //rl_bind_key('\t', rl_abort); // disable auto completion
@@ -214,12 +221,16 @@ int main (int argc, char **argv) {
  while ( cont ) {
   
   if ( (line=readline("> "))==NULL ) goto end;
-  if ( *line!=0 ) add_history(line);
   trim(line, strlen(line));
   n=explode(line, com, MAXCOM);
-  free(line);
   
-  if ( n==0 ) continue;
+  if ( n==0 ) {
+   free(line);
+   continue;
+  } else {
+   add_history(line);
+   free(line);
+  }
   
   cur=getSubCom(com, n, &i);
   
@@ -254,11 +265,9 @@ int main (int argc, char **argv) {
   }
   
   
-  for (i=0; i<MAXCOM; i++) {
-   if ( com[i]!=NULL ) {
-    free(com[i]);
-    com[i]=NULL;
-   }
+  for (i=0; com[i]!=NULL; ++i) {
+   free(com[i]);
+   com[i]=NULL;
   }
   
  }
