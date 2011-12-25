@@ -191,6 +191,38 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
 }
 
 
+/*
+static int my_poll (struct pollfd *fds, nfds_t nfds, struct timeval *timeout) {
+ 
+ int ret, rem=-1;
+ struct timeval start, stop;
+ 
+ 
+ if ( timeout!=NULL ) {
+  if ( timeout->tv_sec<0 || timeout->tv_usec<0 ) rem=0;
+  else rem=timeout->tv_sec*1000+timeout->tv_usec/1000;
+ }
+ 
+ gettimeofday(&start, NULL);
+ ret=poll(fds, nfds, rem);
+ gettimeofday(&stop, NULL);
+ 
+ if ( timeout!=NULL ) {
+  rem-=(stop.tv_sec-start.tv_sec)*1000+(stop.tv_usec-start.tv_usec)/1000;
+  if ( ret<=0 || rem<0 ) rem=0;
+  printf("tv_sec = %i, tv_usec = %i\n", start.tv_sec, start.tv_usec);
+  printf("tv_sec = %i, tv_usec = %i\n", stop.tv_sec, stop.tv_usec);
+  printf("rem = %i\n", rem);
+  timeout->tv_sec=rem/1000;
+  timeout->tv_usec=(rem%1000)*1000;
+ }
+ 
+ 
+ return ret;
+ 
+}
+*/
+
 
 // ------------------------------------------------------------------------------------------------------------
 int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr) {
@@ -200,29 +232,45 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
  struct sockaddr_in remote;
  socklen_t slen=sizeof(struct sockaddr_in);
  const struct swi_attr *sa=nga->current;
- int len;
+ struct timeval rem;
+ //struct pollfd fds;
+ fd_set fs;
+ int len=-1;
  
  
  np.buffer=buffer;
- np.maxlen=sizeof(buffer);
  
  memset(&remote, 0, sizeof(struct sockaddr_in));
  remote.sin_family=AF_INET;
  
+ rem=nga->timeout;
+ 
+ //fds.fd=nga->sock;
+ //fds.events=POLLIN;
+ 
  while ( 1 ) {
   
-  len=recvfrom(nga->sock, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &slen);
+  //my_poll(&fds, 1, &rem);
+  FD_ZERO(&fs);
+  FD_SET(nga->sock, &fs);
+  select(nga->sock+1, &fs, NULL, NULL, &rem);
   
-  if ( len<0 ) {
-   break;
-  }
+  len=recvfrom(nga->sock, buffer, sizeof(buffer), MSG_DONTWAIT, (struct sockaddr*)&remote, &slen);
   
-  if ( ntohs(remote.sin_port)==SWITCH_PORT && len>=(int)sizeof(struct ng_header) && validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) ) {
-   initNgPacket(&np);
-   extractPacketAttributes(&np, error, attr_error, attr);
-   len=0;
-   break;
-  }
+  if ( len<0 ) break;
+  
+  np.maxlen=len;
+  initNgPacket(&np);
+  
+  if ( 
+      ntohs(remote.sin_port)!=SWITCH_PORT || 
+      len<(int)sizeof(struct ng_header) || 
+      !validateNgHeader(np.nh, code, &nga->localmac, sa==NULL ? NULL : &sa->mac , nga->seq) || 
+      extractPacketAttributes(&np, error, attr_error, attr)<0
+     ) continue;
+  
+  len=0;
+  break;
   
  }
  
@@ -233,7 +281,7 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
 
 
 
-int checkErrorCode (unsigned char err, unsigned short attr_error) {
+static int checkErrorCode (unsigned char err, unsigned short attr_error) {
  
  
  if ( err==ERROR_INVALID_PASSWORD && attr_error==ATTR_PASSWORD ) {

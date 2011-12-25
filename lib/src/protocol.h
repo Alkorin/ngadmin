@@ -110,7 +110,7 @@ struct attr* newAddrAttr (unsigned short attr, struct in_addr value);
 void freeAttr (struct attr *at);
 
 // 
-void extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr);
+int extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr);
 
 // 
 void extractSwitchAttributes (struct swi_attr *sa, const List *l);

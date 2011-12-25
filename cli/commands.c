@@ -22,6 +22,10 @@ bool do_firmware_show (int nb, const char **com, struct ngadmin *nga);
 bool do_firmware_upgrade (int nb, const char **com, struct ngadmin *nga);
 
 
+// help
+bool do_help (int nb, const char **com, struct ngadmin *nga);
+
+
 // igmp
 bool do_igmp_set (int nb, const char **com, struct ngadmin *nga);
 bool do_igmp_show (int nb, const char **com, struct ngadmin *nga);
@@ -118,6 +122,8 @@ COM_ROOT_START(coms)
   COM_TERM(show, do_firmware_show, false)
   COM_TERM(upgrade, do_firmware_upgrade, true)
  COM_END
+ 
+ COM_TERM(help, do_help, false)
  
  COM_START(igmp)
   COM_TERM(set, do_igmp_set, true)

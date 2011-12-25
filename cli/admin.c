@@ -1,5 +1,7 @@
 
 #include <stdio.h>
+#include <signal.h>
+#include <setjmp.h>
 
 #include <getopt.h>
 #include <readline/readline.h>
@@ -121,6 +123,39 @@ char** my_completion (const char *text, int start, int end UNUSED) {
 
 
 
+static struct ngadmin *nga=NULL;
+static sigjmp_buf jmpbuf;
+struct termios orig_term, current_term;
+
+
+
+NORET static void handler (int sig) {
+ 
+ 
+ switch ( sig ) {
+  
+  case SIGTERM:
+  case SIGINT:
+   printf("interrupt\n");
+  
+   current_term.c_lflag|=ECHO;
+   tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
+   
+   siglongjmp(jmpbuf, 1);
+  
+  default:
+   ngadmin_close(nga);
+   
+   tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
+   
+   exit(0);
+  
+ }
+ 
+ 
+}
+
+
 
 int main (int argc, char **argv) {
  
@@ -137,7 +172,6 @@ int main (int argc, char **argv) {
  const char *iface="eth0";
  float timeout=0.f;
  bool kb=false, force=false, global=false;
- struct ngadmin *nga=NULL;
  struct timeval tv;
  const struct TreeNode *cur, *next;
  int i, n;
@@ -212,10 +246,25 @@ int main (int argc, char **argv) {
  if ( global && ngadmin_useGlobalBroadcast(nga, true)!=ERR_OK ) goto end;
  
  
+ 
  //rl_bind_key('\t', rl_abort); // disable auto completion
  //rl_bind_key('\t', rl_complete); // enable auto-complete
  rl_attempted_completion_function=my_completion;
  rl_completion_entry_function=my_generator;
+ 
+ 
+ tcgetattr(STDIN_FILENO, &orig_term);
+ current_term=orig_term;
+ /*
+ current_term.c_lflag&=~ECHOCTL;
+ tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
+ */
+ 
+ 
+ signal(SIGTERM, handler);
+ signal(SIGINT, handler);
+ 
+ sigsetjmp(jmpbuf, 1);
  
  
  while ( cont ) {
@@ -274,10 +323,7 @@ int main (int argc, char **argv) {
  
  
  end:
- ngadmin_close(nga);
- 
- 
- return 0;
+ handler(0);
  
 }
 

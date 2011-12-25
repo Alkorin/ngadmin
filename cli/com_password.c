@@ -32,15 +32,36 @@ bool do_password_change (int nb, const char **com, struct ngadmin *nga) {
 bool do_password_set (int nb, const char **com, struct ngadmin *nga) {
  
  int i;
+ char buf[64];
+ const char *pass;
  
  
- if ( nb!=1 ) {
-  printf("Usage: password set <value>\n");
+ if ( nb>1 ) {
+  printf("Usage: password set [<value>]\n");
   return false;
  }
  
- i=ngadmin_setPassword(nga, com[0]);
- printErrCode(i);
+ 
+ if ( nb==0 ) {
+  printf("Enter password: ");
+  fflush(stdout);
+  current_term.c_lflag&=~ECHO;
+  tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
+  pass=fgets(buf, sizeof(buf), stdin);
+  trim(buf, strlen(buf));
+  current_term.c_lflag|=ECHO;
+  tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
+  putchar('\n');
+ } else {
+  pass=com[0];
+ }
+ 
+ 
+ if ( pass!=NULL ) {
+  i=ngadmin_setPassword(nga, pass);
+  printErrCode(i);
+ }
+ 
  
  
  return true;

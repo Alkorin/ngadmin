@@ -256,9 +256,10 @@ void freeAttr (struct attr *at) {
 
 
 // --------------------------------------------------------------------------------------------------------------
-void extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr) {
+int extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr) {
  
  struct attr *at;
+ int ret=0;
  
  
  if ( error!=NULL ) *error=np->nh->error;
@@ -266,12 +267,20 @@ void extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsign
  
  while ( getPacketTotalSize(np)<np->maxlen ) {
   
+  // no room for an attribute header: error
+  if ( getPacketTotalSize(np)+(int)sizeof(struct attr_header)>np->maxlen ) {
+   ret=-1;
+   break;
+  }
+  
   at=malloc(sizeof(struct attr));
   at->attr=ntohs(np->ah->attr);
   at->size=ntohs(np->ah->size);
   
-  if ( getPacketTotalSize(np)+at->size>np->maxlen ) {
+  // attribute data bigger than the remaining size: error
+  if ( getPacketTotalSize(np)+(int)sizeof(struct attr_header)+at->size>np->maxlen ) {
    free(at);
+   ret=-1;
    break;
   }
   
@@ -284,14 +293,16 @@ void extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsign
   
   pushBackList(attr, at);
   
-  if ( at->attr==ATTR_END ) {
-   break;
-  }
+  // stop on an END attribute
+  if ( at->attr==ATTR_END ) break;
   
+  // move to next attribute
   np->ah=(struct attr_header*)(np->ah->data+at->size);
   
  }
  
+ 
+ return ret;
  
 }
 
