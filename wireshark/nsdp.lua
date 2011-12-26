@@ -28,7 +28,7 @@ local op_codes={
 local error_codes={
  [0]="OK", 
  [5]="Invalid Value", 
- [7]="Invalid Password"
+ [7]="Access Denied"
 }
 
 
@@ -267,11 +267,12 @@ local function dissect_header (buffer, subtree)
  subtree:add(f_code, buffer(1, 1)):append_text(" ("..(op_codes[buffer(1, 1):uint()] or "unknown")..")")
  
  local errcode=buffer(2, 1):uint()
+ local errattr=buffer(4, 2):uint()
  subtree:add(f_error, buffer(2, 1)):append_text(" ("..(error_codes[errcode] or "unknown")..")")
  
  -- add the erroneous attribute only if an error occurred
- if ( errcode~=0 ) then
-  local atf=attributes[buffer(4, 2):uint()]
+ if ( errattr~=0 ) then
+  local atf=attributes[errattr]
   subtree:add(f_errattr, buffer(4, 2)):append_text(" ("..(atf and atf.name or "unk")..")")
  end
  

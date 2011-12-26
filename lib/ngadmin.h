@@ -48,11 +48,12 @@ enum {
  ERR_OK=0, 			/**< no error */
  ERR_NET=-1, 			/**< network error */
  ERR_NOTLOG=-2, 		/**< not logged */
- ERR_BADPASS=-3, 		/**< bad password */
- ERR_BADID=-4, 			/**< bad switch id */
- ERR_INVARG=-5, 		/**< invalid argument */
- ERR_TIMEOUT=-6, 		/**< timeout */
- ERR_NOTIMPL=-7			/**< not implemented */
+ ERR_DENIED=-3, 		/**< access denied */
+ ERR_BADPASS=-4, 		/**< bad password */
+ ERR_BADID=-5, 			/**< bad switch id */
+ ERR_INVARG=-6, 		/**< invalid argument */
+ ERR_TIMEOUT=-7, 		/**< timeout */
+ ERR_NOTIMPL=-8			/**< not implemented */
 };
 
 

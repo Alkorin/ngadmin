@@ -4,9 +4,6 @@
 
 
 
-
-
-
 void printErrCode (int err) {
  
  
@@ -14,6 +11,7 @@ void printErrCode (int err) {
   case ERR_OK: /*printf("ok\n");*/ break;
   case ERR_NET: printf("network error\n"); break;
   case ERR_NOTLOG: printf("no switch selected\n"); break;
+  case ERR_DENIED: printf("access denied\n"); break;
   case ERR_BADPASS: printf("wrong password\n"); break;
   case ERR_BADID: printf("bad switch id\n"); break;
   case ERR_INVARG: printf("invalid argument\n"); break;
@@ -53,6 +51,10 @@ const char* prio[]={
  "low", 
  NULL
 };
+
+
+
+
 
 
 int parseBitrate (const char *s) {

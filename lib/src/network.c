@@ -11,34 +11,14 @@ int startNetwork (struct ngadmin *nga) {
  int ret;
  
  
- memset(&nga->local, 0, sizeof(struct sockaddr_in));
- nga->local.sin_family=AF_INET;
- nga->local.sin_port=htons(CLIENT_PORT);
- 
- memset(&ifr, 0, sizeof(struct ifreq));
- strncpy(ifr.ifr_name, nga->iface, IFNAMSIZ-1);
- 
+ // create socket
  if ( (nga->sock=socket(AF_INET, SOCK_DGRAM, 0))<0 ) {
   perror("socket");
   return nga->sock;
  }
  
- /*
- // get the interface IP address
- if ( (ret=ioctl(nga->sock, SIOCGIFADDR, &ifr))<0 ) {
-  perror("ioctl(SIOCGIFADDR)");
-  close(nga->sock);
-  return ret;
- }
- */
- /*
- Here we have a problem: when you have multiple interfaces, sending a packet to 
- 255.255.255.255 may not send it to the interface you want. If you bind() to 
- the address of the interface, you will not be able to receive broadcasts. 
- The only solution I have found yet is in this case to use 
- setsockopt(SO_BINDTODEVICE) but this requires root priviledges. 
- */
- //local.sin_addr=(*(struct sockaddr_in*)&ifr.ifr_addr).sin_addr; // FIXME
+ memset(&ifr, 0, sizeof(struct ifreq));
+ strncpy(ifr.ifr_name, nga->iface, IFNAMSIZ-1);
  
  // get the interface broadcast address
  if ( (ret=ioctl(nga->sock, SIOCGIFBRDADDR, &ifr))<0 ) {
@@ -57,6 +37,10 @@ int startNetwork (struct ngadmin *nga) {
  memcpy(&nga->localmac, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
  
  // bind
+ memset(&nga->local, 0, sizeof(struct sockaddr_in));
+ nga->local.sin_family=AF_INET;
+ nga->local.sin_port=htons(CLIENT_PORT);
+ 
  if ( (ret=bind(nga->sock, (struct sockaddr*)&nga->local, sizeof(struct sockaddr_in)))<0 ) {
   perror("bind");
   close(nga->sock);
@@ -70,7 +54,7 @@ int startNetwork (struct ngadmin *nga) {
   return ret;
  }
  
- // prevent unicast packets from being routed
+ // prevent unicast packets from being routed by setting the TTL to 1
  ret=1;
  if ( (ret=setsockopt(nga->sock, IPPROTO_IP, IP_TTL, &ret, sizeof(ret)))<0 ) {
   perror("setsockopt(IP_TTL)");
@@ -144,6 +128,30 @@ int updateTimeout (struct ngadmin *nga) {
  
 }
 
+
+/*
+// ---------------------------------------------------------
+int connectSwitch (struct ngadmin *nga, struct swi_attr *sa) {
+ 
+ struct sockaddr_in remote;
+ 
+ 
+ memset(&remote, 0, sizeof(struct sockaddr_in));
+ remote.sin_family=AF_UNSPEC;
+ remote.sin_port=htons(SWITCH_PORT);
+ 
+ nga->current=sa;
+ 
+ if ( sa!=NULL && !nga->keepbroad ) {
+  remote.sin_family=AF_INET;
+  remote.sin_addr=sa->nc.ip; 
+ }
+ 
+ 
+ return connect(nga->sock, (struct sockaddr*)&remote, sizeof(struct sockaddr_in));
+ 
+}
+*/
 
 
 // ----------------------------------------------------------------
@@ -253,7 +261,7 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
   //my_poll(&fds, 1, &rem);
   FD_ZERO(&fs);
   FD_SET(nga->sock, &fs);
-  select(nga->sock+1, &fs, NULL, NULL, &rem);
+  select(nga->sock+1, &fs, NULL, NULL, &rem); // FIXME: non portable
   
   len=recvfrom(nga->sock, buffer, sizeof(buffer), MSG_DONTWAIT, (struct sockaddr*)&remote, &slen);
   
@@ -284,16 +292,14 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
 static int checkErrorCode (unsigned char err, unsigned short attr_error) {
  
  
- if ( err==ERROR_INVALID_PASSWORD && attr_error==ATTR_PASSWORD ) {
-  return ERR_BADPASS;
+ switch ( err ) {
+  
+  case ERROR_DENIED: return attr_error==ATTR_PASSWORD ? ERR_BADPASS : ERR_DENIED ;
+  case ERROR_INVALID_VALUE: return ERR_INVARG;
+  default: return ERR_OK;
+  
  }
  
- if ( err==ERROR_INVALID_VALUE ) {
-  return ERR_INVARG;
- }
- 
- 
- return ERR_OK;
  
 }
 

@@ -77,14 +77,9 @@ char* my_generator (const char* text, int state) {
  }
  
  
- while ( (name=tn->name)!=NULL ) {
-  ++tn;
-  
-  if ( strncmp(name, text, len)==0 ) {
+ while ( (name=tn++->name)!=NULL )
+  if ( strncmp(name, text, len)==0 )
    return strdup(name);
-  }
-  
- }
  
  
  return NULL;
@@ -178,6 +173,14 @@ int main (int argc, char **argv) {
  
  
  
+ tcgetattr(STDIN_FILENO, &orig_term);
+ current_term=orig_term;
+ /*
+ current_term.c_lflag&=~ECHOCTL;
+ tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
+ */
+ 
+ 
  opterr=0;
  
  while ( (n=getopt_long(argc, argv, "bfgi:ht:", opts, NULL))!=-1 ) {
@@ -252,13 +255,6 @@ int main (int argc, char **argv) {
  rl_attempted_completion_function=my_completion;
  rl_completion_entry_function=my_generator;
  
- 
- tcgetattr(STDIN_FILENO, &orig_term);
- current_term=orig_term;
- /*
- current_term.c_lflag&=~ECHOCTL;
- tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
- */
  
  
  signal(SIGTERM, handler);

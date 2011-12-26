@@ -216,6 +216,7 @@ int ngadmin_scan (struct ngadmin *nga) {
  
  // try to receive any packets until timeout
  swiList=createEmptyList();
+ // FIXME: end after timeout whatever received packet is good or not
  while ( recvNgPacket(nga, CODE_READ_REP, NULL, NULL, attr)>=0 ) {
   sa=malloc(sizeof(struct swi_attr));
   extractSwitchAttributes(sa, attr);
