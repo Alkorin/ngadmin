@@ -355,7 +355,6 @@ bool do_vlan_pvid_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *
  }
  
  
- printf("PVID: \n");
  printf("Port\t");
  for (i=1; i<=sa->ports; ++i) {
   printf("%i\t", i);
