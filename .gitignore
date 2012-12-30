@@ -2,4 +2,6 @@
 *~
 *.so
 admin
-emu
+admind
+lib/doc/
+brouillon

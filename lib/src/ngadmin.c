@@ -226,6 +226,8 @@ int ngadmin_scan (struct ngadmin *nga) {
  
  nga->swi_count=swiList->count;
  nga->swi_tab=convertToArray(swiList, sizeof(struct swi_attr));
+ destroyList(swiList, free);
+ destroyList(attr, (void(*)(void*))freeAttr);
  
  
  return ERR_OK;
@@ -363,6 +365,7 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports) {
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
  
+ 
  return ret;
  
 }
@@ -443,6 +446,7 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps) {
  
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
+ 
  
  return ret;
  
@@ -534,6 +538,7 @@ int ngadmin_getStormFilterState (struct ngadmin *nga, int *s) {
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
  
+ 
  return ret;
  
 }
@@ -589,6 +594,7 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports) {
  
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
+ 
  
  return ret;
  
@@ -672,6 +678,7 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) {
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
  
+ 
  return ret;
  
 }
@@ -751,6 +758,7 @@ int ngadmin_getQOSMode (struct ngadmin *nga, int *s) {
  
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
+ 
  
  return ret;
  
@@ -1164,6 +1172,7 @@ int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) {
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
  
+ 
  return ret;
  
 }
@@ -1254,6 +1263,7 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) {
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
  
+ 
  return ret;
  
 }
@@ -1331,6 +1341,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
  
+ 
  return ret;
  
 }
@@ -1378,6 +1389,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
  
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
+ 
  
  return ret;
  
@@ -1454,7 +1466,6 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
  }
  
  
- 
  pushBackList(attr, newAttr(ATTR_VLAN_DOT_CONF, 4, p));
  ret=writeRequest(nga, attr);
  attr=NULL;
@@ -1462,6 +1473,7 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
  
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
+ 
  
  return ret;
  
@@ -1530,6 +1542,7 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) {
  
  end:
  destroyList(attr, (void(*)(void*))freeAttr);
+ 
  
  return ret;
  

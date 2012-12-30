@@ -129,30 +129,6 @@ int updateTimeout (struct ngadmin *nga) {
 }
 
 
-/*
-// ---------------------------------------------------------
-int connectSwitch (struct ngadmin *nga, struct swi_attr *sa) {
- 
- struct sockaddr_in remote;
- 
- 
- memset(&remote, 0, sizeof(struct sockaddr_in));
- remote.sin_family=AF_UNSPEC;
- remote.sin_port=htons(SWITCH_PORT);
- 
- nga->current=sa;
- 
- if ( sa!=NULL && !nga->keepbroad ) {
-  remote.sin_family=AF_INET;
-  remote.sin_addr=sa->nc.ip; 
- }
- 
- 
- return connect(nga->sock, (struct sockaddr*)&remote, sizeof(struct sockaddr_in));
- 
-}
-*/
-
 
 // ----------------------------------------------------------------
 int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
@@ -164,8 +140,6 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
  struct sockaddr_in remote;
  const struct swi_attr *sa=nga->current;
  int ret;
- 
- 
  
  
  np.buffer=buffer;
@@ -199,38 +173,6 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr) {
 }
 
 
-/*
-static int my_poll (struct pollfd *fds, nfds_t nfds, struct timeval *timeout) {
- 
- int ret, rem=-1;
- struct timeval start, stop;
- 
- 
- if ( timeout!=NULL ) {
-  if ( timeout->tv_sec<0 || timeout->tv_usec<0 ) rem=0;
-  else rem=timeout->tv_sec*1000+timeout->tv_usec/1000;
- }
- 
- gettimeofday(&start, NULL);
- ret=poll(fds, nfds, rem);
- gettimeofday(&stop, NULL);
- 
- if ( timeout!=NULL ) {
-  rem-=(stop.tv_sec-start.tv_sec)*1000+(stop.tv_usec-start.tv_usec)/1000;
-  if ( ret<=0 || rem<0 ) rem=0;
-  printf("tv_sec = %i, tv_usec = %i\n", start.tv_sec, start.tv_usec);
-  printf("tv_sec = %i, tv_usec = %i\n", stop.tv_sec, stop.tv_usec);
-  printf("rem = %i\n", rem);
-  timeout->tv_sec=rem/1000;
-  timeout->tv_usec=(rem%1000)*1000;
- }
- 
- 
- return ret;
- 
-}
-*/
-
 
 // ------------------------------------------------------------------------------------------------------------
 int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr) {
@@ -241,7 +183,6 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
  socklen_t slen=sizeof(struct sockaddr_in);
  const struct swi_attr *sa=nga->current;
  struct timeval rem;
- //struct pollfd fds;
  fd_set fs;
  int len=-1;
  
@@ -253,12 +194,8 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
  
  rem=nga->timeout;
  
- //fds.fd=nga->sock;
- //fds.events=POLLIN;
- 
  while ( 1 ) {
   
-  //my_poll(&fds, 1, &rem);
   FD_ZERO(&fs);
   FD_SET(nga->sock, &fs);
   select(nga->sock+1, &fs, NULL, NULL, &rem); // FIXME: non portable
