@@ -6,7 +6,7 @@ all: lib libdoc
 
 
 lib: 
-	@cd src && make
+	@+$(MAKE) -C src
 
 libdoc: 
 	doxygen ngadmin
@@ -14,8 +14,8 @@ libdoc:
 
 clean: 
 	@rm -rf doc
-	@cd src && make clean
+	@+$(MAKE) -C src clean
 
 mrproper: clean
-	@cd src && make mrproper
+	@+$(MAKE) -C src mrproper
 

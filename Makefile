@@ -5,15 +5,15 @@ all: lib libdoc cli
 
 
 lib: force
-	@cd lib && make lib
+	@+$(MAKE) -C lib lib
 
 
 libdoc: force
-	@cd lib && make libdoc
+	@+$(MAKE) -C lib libdoc
 
 
 cli: force
-	@cd cli && make
+	@+$(MAKE) -C cli
 
 
 
@@ -22,11 +22,11 @@ force:
 
 
 clean:
-	@cd lib && make clean
-	@cd cli && make clean
+	@+$(MAKE) -C lib clean
+	@+$(MAKE) -C cli clean
 
 mrproper: clean
-	@cd lib && make mrproper
-	@cd cli && make mrproper
+	@+$(MAKE) -C lib mrproper
+	@+$(MAKE) -C cli mrproper
 
 

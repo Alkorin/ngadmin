@@ -29,7 +29,7 @@ clean:
 	@rm -f *.o
 
 mrproper: clean
-	@rm -f $(EXEC)
+	@rm -f admin admind
 
 
 
