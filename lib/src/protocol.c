@@ -47,7 +47,7 @@ void initNgHeader (struct ng_header *nh, char code, const struct ether_addr *cli
  }
  
  nh->seqnum=htonl(seqnum);
- strcpy(nh->proto_id, "NSDP");
+ memcpy(nh->proto_id, "NSDP", 4);
  
  
 }
