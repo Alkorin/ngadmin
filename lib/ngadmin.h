@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 #include <arpa/inet.h>
+
 #include <netinet/ether.h>
 
 
@@ -45,15 +46,16 @@
  * This enum lists all the error codes the library can return to user. 
  **/
 enum {
- ERR_OK=0, 			/**< no error */
- ERR_NET=-1, 			/**< network error */
- ERR_NOTLOG=-2, 		/**< not logged */
- ERR_DENIED=-3, 		/**< access denied */
- ERR_BADPASS=-4, 		/**< bad password */
- ERR_BADID=-5, 			/**< bad switch id */
- ERR_INVARG=-6, 		/**< invalid argument */
- ERR_TIMEOUT=-7, 		/**< timeout */
- ERR_NOTIMPL=-8			/**< not implemented */
+	ERR_OK = 0,			/**< no error */
+	ERR_NET = -1,			/**< network error */
+	ERR_NOTLOG = -2,		/**< not logged */
+	ERR_DENIED = -3,		/**< access denied */
+	ERR_BADPASS = -4,		/**< bad password */
+	ERR_BADID = -5,			/**< bad switch id */
+	ERR_INVARG = -6,		/**< invalid argument */
+	ERR_TIMEOUT = -7,		/**< timeout */
+	ERR_MEM = -8,			/**< out of memory */
+	ERR_NOTIMPL = -8		/**< not implemented */
 };
 
 
@@ -63,10 +65,11 @@ enum {
  * This enum lists all the speeds a port can have. 
  **/
 enum {
- SPEED_DOWN=0, 			/**< link down */
- SPEED_10=1, 			/**< 10 Mb/s */
- SPEED_100=4, 			/**< 100 Mb/s */
- SPEED_1000=5			/**< 1000 Mb/s */
+	SPEED_UNK = -1,			/**< unknown status */
+	SPEED_DOWN = 0,			/**< link down */
+	SPEED_10 = 1,			/**< 10 Mb/s */
+	SPEED_100 = 4,			/**< 100 Mb/s */
+	SPEED_1000 = 5			/**< 1000 Mb/s */
 };
 
 
@@ -76,11 +79,11 @@ enum {
  * This enum lists all the VLAN types available
  **/
 enum {
- VLAN_DISABLED=0, 		/**< VLAN disabled */
- VLAN_PORT_BASIC=1, 		/**< port basic */
- VLAN_PORT_ADV=2, 		/**< port advanced */
- VLAN_DOT_BASIC=3, 		/**< 802.1q basic */
- VLAN_DOT_ADV=4			/**< 802.1q advanced */
+	VLAN_DISABLED = 0,		/**< VLAN disabled */
+	VLAN_PORT_BASIC = 1,		/**< port basic */
+	VLAN_PORT_ADV = 2,		/**< port advanced */
+	VLAN_DOT_BASIC = 3,		/**< 802.1q basic */
+	VLAN_DOT_ADV = 4		/**< 802.1q advanced */
 };
 
 
@@ -89,10 +92,10 @@ enum {
  * This enum lists all the VLAN specifications a port can have. 
  **/
 enum {
- VLAN_UNSPEC=0xFF, 		/**< unspecified */
- VLAN_NO=0, 			/**< not present */
- VLAN_UNTAGGED=1, 		/**< present, untagged */
- VLAN_TAGGED=2			/**< present, tagged */
+	VLAN_UNSPEC = 0xFF,		/**< unspecified */
+	VLAN_NO = 0,			/**< not present */
+	VLAN_UNTAGGED = 1,		/**< present, untagged */
+	VLAN_TAGGED = 2			/**< present, tagged */
 };
 
 
@@ -114,8 +117,8 @@ enum {
  * This enum lists all the availables QoS modes. 
  **/
 enum {
- QOS_PORT=1, 			/**< port based */
- QOS_DOT=2			/**< 802.1p based */
+	QOS_PORT = 1,			/**< port based */
+	QOS_DOT = 2			/**< 802.1p based */
 };
 
 
@@ -124,11 +127,11 @@ enum {
  * This enum lists all the priorities a port can have. 
  **/
 enum {
- PRIO_UNSPEC=-1, 		/**< unspecified */
- PRIO_HIGH=1, 			/**< high */
- PRIO_MED=2, 			/**< medium */
- PRIO_NORM=3, 			/**< normal */
- PRIO_LOW=4			/**< low */
+	PRIO_UNSPEC = -1,		/**< unspecified */
+	PRIO_HIGH = 1,			/**< high */
+	PRIO_MED = 2,			/**< medium */
+	PRIO_NORM = 3,			/**< normal */
+	PRIO_LOW = 4			/**< low */
 };
 
 
@@ -139,19 +142,19 @@ enum {
  * This enum lists all the available bitrates. 
  **/
 enum {
- BITRATE_UNSPEC=-1,	/**< unspecified */
- BITRATE_NOLIMIT=0,	/**< unlimited */ 
- BITRATE_512K=1, 	/**< 512 Kb/s */
- BITRATE_1M=2, 		/**< 1 Mb/s */
- BITRATE_2M=3, 		/**< 2 Mb/s */
- BITRATE_4M=4, 		/**< 4 Mb/s */
- BITRATE_8M=5, 		/**< 8 Mb/s */
- BITRATE_16M=6, 	/**< 16 Mb/s */
- BITRATE_32M=7, 	/**< 32 Mb/s */
- BITRATE_64M=8, 	/**< 64 Mb/s */
- BITRATE_128M=9, 	/**< 128 Mb/s */
- BITRATE_256M=10, 	/**< 256 Mb/s */
- BITRATE_512M=11	/**< 512 Mb/s */
+	BITRATE_UNSPEC = -1,	/**< unspecified */
+	BITRATE_NOLIMIT = 0,	/**< unlimited */
+	BITRATE_512K = 1,	/**< 512 Kb/s */
+	BITRATE_1M = 2,		/**< 1 Mb/s */
+	BITRATE_2M = 3,		/**< 2 Mb/s */
+	BITRATE_4M = 4,		/**< 4 Mb/s */
+	BITRATE_8M = 5,		/**< 8 Mb/s */
+	BITRATE_16M = 6,	/**< 16 Mb/s */
+	BITRATE_32M = 7,	/**< 32 Mb/s */
+	BITRATE_64M = 8,	/**< 64 Mb/s */
+	BITRATE_128M = 9,	/**< 128 Mb/s */
+	BITRATE_256M = 10,	/**< 256 Mb/s */
+	BITRATE_512M = 11	/**< 512 Mb/s */
 };
 
 
@@ -171,10 +174,10 @@ struct ngadmin;
  * Represents the network configuration of a switch. 
  */
 struct net_conf {
- struct in_addr ip;		/**< IP */
- struct in_addr netmask;	/**< netmask */
- struct in_addr gw;		/**< gateway IP */
- bool dhcp;			/**< DHCP enabled */
+	struct in_addr ip;		/**< IP */
+	struct in_addr netmask;		/**< netmask */
+	struct in_addr gw;		/**< gateway IP */
+	bool dhcp;			/**< DHCP enabled */
 };
 
 
@@ -183,12 +186,12 @@ struct net_conf {
  * Represents the main characteristics of a switch. 
  */
 struct swi_attr {
- char product[PRODUCT_SIZE];	/**< product name (eg.\ GS108EV1) */
- char name[NAME_SIZE];		/**< custom name */
- char firmware[FIRMWARE_SIZE];	/**< firmware version string */
- unsigned char ports;		/**< number of ports */
- struct ether_addr mac;		/**< MAC address */
- struct net_conf nc;		/**< network configuration */
+	char product[PRODUCT_SIZE];	/**< product name (eg.\ GS108EV1) */
+	char name[NAME_SIZE];		/**< custom name */
+	char firmware[FIRMWARE_SIZE];	/**< firmware version string */
+	unsigned char ports;		/**< number of ports */
+	struct ether_addr mac;		/**< MAC address */
+	struct net_conf nc;		/**< network configuration */
 };
 
 
@@ -197,9 +200,9 @@ struct swi_attr {
  * Represents statistics of a particular port. 
  */
 struct port_stats {
- unsigned long long recv;	/**< packets received */
- unsigned long long sent;	/**< packets sent */
- unsigned long long crc;	/**< CRC errors */
+	unsigned long long recv;	/**< packets received */
+	unsigned long long sent;	/**< packets sent */
+	unsigned long long crc;		/**< CRC errors */
 };
 
 
@@ -208,10 +211,10 @@ struct port_stats {
  * Represents the IGMP snooping configuration of a switch. 
  */
 struct igmp_conf {
- bool enable;			/**< IGMP snooping enabled */
- unsigned short vlan;		/**< VLAN on which IGMP snooping is done */
- bool validate;			/**< validate IGMPv3 headers */
- bool block;			/**< block unknown multicast addresses */
+	bool enable;			/**< IGMP snooping enabled */
+	unsigned short vlan;		/**< VLAN on which IGMP snooping is done */
+	bool validate;			/**< validate IGMPv3 headers */
+	bool block;			/**< block unknown multicast addresses */
 };
 
 
@@ -219,9 +222,9 @@ struct igmp_conf {
  * Cabletest result.
  */
 struct cabletest {
- char port;			/**< port */
- int v1;			/**< raw value 1 */
- int v2;			/**< raw value 2 */
+	char port;		/**< port */
+	int v1;			/**< raw value 1 */
+	int v2;			/**< raw value 2 */
 };
 
 
