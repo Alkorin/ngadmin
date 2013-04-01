@@ -3,7 +3,7 @@
 *.so
 *.a
 admin
-admind
+ngdump
 lib/doc/
 raw/doc/
 brouillon
