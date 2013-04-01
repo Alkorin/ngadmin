@@ -1,7 +1,9 @@
 *.o
 *~
 *.so
+*.a
 admin
 admind
 lib/doc/
+raw/doc/
 brouillon

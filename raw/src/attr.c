@@ -1,7 +1,6 @@
 
 #include <ngadmin.h>
 
-#include "lib.h"
 #include "attr.h"
 #include "protocol.h"
 

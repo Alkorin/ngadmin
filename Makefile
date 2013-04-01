@@ -1,10 +1,14 @@
 
 
-all: lib libdoc cli
+all: raw lib libdoc cli
 	
 
 
-lib: force
+raw: force
+	@+$(MAKE) -C raw lib
+
+
+lib: raw force
 	@+$(MAKE) -C lib lib
 
 
@@ -12,7 +16,7 @@ libdoc: force
 	@+$(MAKE) -C lib libdoc
 
 
-cli: force
+cli: lib force
 	@+$(MAKE) -C cli
 
 
@@ -22,10 +26,12 @@ force:
 
 
 clean:
+	@+$(MAKE) -C raw clean
 	@+$(MAKE) -C lib clean
 	@+$(MAKE) -C cli clean
 
 mrproper: clean
+	@+$(MAKE) -C raw mrproper
 	@+$(MAKE) -C lib mrproper
 	@+$(MAKE) -C cli mrproper
 
