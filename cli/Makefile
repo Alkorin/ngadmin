@@ -1,20 +1,19 @@
 
 CC=gcc
-CFLAGS=-I../lib -W -Wall -Wextra -Os
-LDFLAGS=-L../lib -lreadline
+CFLAGS=-I../lib/include/ -W -Wall -Wextra -Os
+LDFLAGS=-L../lib -lngadmin -lreadline
+EXEC=admin
 
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
 
 ifeq ($(DEBUG), yes)
-EXEC=admind
 CFLAGS+=-g
-LDFLAGS+=-lngadmind -g
+LDFLAGS+=-g
 else
-EXEC=admin
 CFLAGS+=-fomit-frame-pointer
-LDFLAGS+=-lngadmin -s
+LDFLAGS+=-s
 endif
 
 
@@ -29,7 +28,7 @@ clean:
 	@rm -f *.o
 
 mrproper: clean
-	@rm -f admin admind
+	@rm -f $(EXEC)
 
 
 
