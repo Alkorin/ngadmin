@@ -3,11 +3,11 @@
 
 #include <ngadmin.h>
 
+#include <attr.h>
+#include <protocol.h>
+
 #include "lib.h"
 #include "network.h"
-#include "attr.h"
-#include "protocol.h"
-
 
 
 static const struct timeval default_timeout = {.tv_sec = 4, .tv_usec = 0};
@@ -177,7 +177,7 @@ int ngadmin_scan (struct ngadmin *nga)
 	/* try to receive any packets until timeout */
 	swiList = createEmptyList();
 	/* FIXME: end after timeout whatever received packet is good or not */
-	while (recvNgPacket(nga, CODE_READ_REP, NULL, NULL, attr, ATTR_END) >= 0) {
+	while (recvNgPacket(nga, CODE_READ_REP, NULL, NULL, attr) >= 0) {
 		sa = malloc(sizeof(struct swi_attr));
 		if (sa == NULL)
 			return ERR_MEM;
@@ -233,7 +233,7 @@ int ngadmin_login (struct ngadmin *nga, int id)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
-	ret = readRequest(nga, attr, ATTR_END);
+	ret = readRequest(nga, attr);
 	if (ret == ERR_OK ) {
 		/* login succeeded */
 		/* TODO: if keep broadcasting is disabled, connect() the UDP 
@@ -286,9 +286,11 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_PORT_STATUS));
-	ret = readRequest(nga, attr, ATTR_PORT_STATUS);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_PORT_STATUS, ATTR_END);
 	
 	memset(ports, SPEED_UNK, nga->current->ports);
 	
@@ -351,9 +353,11 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_PORT_STATISTICS));
-	ret = readRequest(nga, attr, ATTR_PORT_STATISTICS);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_PORT_STATISTICS, ATTR_END);
 	
 	memset(ps, 0, nga->current->ports * sizeof(struct port_stats));
 	
@@ -429,9 +433,11 @@ int ngadmin_getStormFilterState (struct ngadmin *nga, int *s)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_STORM_ENABLE));
-	ret = readRequest(nga, attr, ATTR_STORM_ENABLE);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_STORM_ENABLE, ATTR_END);
 	
 	*s = 0;
 	
@@ -479,9 +485,11 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_STORM_BITRATE));
-	ret = readRequest(nga, attr, ATTR_STORM_BITRATE);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_STORM_BITRATE, ATTR_END);
 	
 	for (port = 0; port < nga->current->ports; port++)
 		ports[port] = BITRATE_UNSPEC;
@@ -549,7 +557,7 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports)
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_BITRATE_INPUT));
 	pushBackList(attr, newEmptyAttr(ATTR_BITRATE_OUTPUT));
-	ret = readRequest(nga, attr, ATTR_END);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
 	
@@ -630,9 +638,11 @@ int ngadmin_getQOSMode (struct ngadmin *nga, int *s)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_QOS_TYPE));
-	ret = readRequest(nga, attr, ATTR_QOS_TYPE);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_QOS_TYPE, ATTR_END);
 	
 	*s = 0;
 	
@@ -680,9 +690,11 @@ int ngadmin_getQOSValues (struct ngadmin *nga, char *ports)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_QOS_CONFIG));
-	ret = readRequest(nga, attr, ATTR_QOS_CONFIG);
+	ret = readRequest(nga, attr);
 	if (ret < 0)
 		goto end;
+	
+	filterAttributes(attr, ATTR_QOS_CONFIG, ATTR_END);
 	
 	for (port = 0; port < nga->current->ports; port++)
 		ports[port] = PRIO_UNSPEC;
@@ -785,9 +797,11 @@ int ngadmin_getMirror (struct ngadmin *nga, char *ports)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_MIRROR));
-	ret = readRequest(nga, attr, ATTR_MIRROR);
+	ret = readRequest(nga, attr);
 	if (ret < 0)
 		goto end;
+	
+	filterAttributes(attr, ATTR_MIRROR, ATTR_END);
 	
 	memset(ports, 0, 1 + nga->current->ports);
 	
@@ -862,9 +876,11 @@ int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic)
 	
 	
 	pushBackList(attr, newEmptyAttr(ATTR_IGMP_ENABLE_VLAN));
-	ret = readRequest(nga, attr, ATTR_IGMP_ENABLE_VLAN);
+	ret = readRequest(nga, attr);
 	if (ret < 0)
 		goto end;
+	
+	filterAttributes(attr, ATTR_IGMP_ENABLE_VLAN, ATTR_END);
 	
 	if (attr->first != NULL) {
 		at = attr->first->data;
@@ -877,9 +893,11 @@ int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic)
 	
 	
 	pushBackList(attr, newEmptyAttr(ATTR_IGMP_BLOCK_UNK));
-	ret = readRequest(nga, attr, ATTR_IGMP_BLOCK_UNK);
+	ret = readRequest(nga, attr);
 	if (ret < 0)
 		goto end;
+	
+	filterAttributes(attr, ATTR_IGMP_BLOCK_UNK, ATTR_END);
 	
 	if (attr->first != NULL) {
 		at = attr->first->data;
@@ -890,9 +908,11 @@ int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic)
 	
 	
 	pushBackList(attr, newEmptyAttr(ATTR_IGMP_VALID_V3));
-	ret = readRequest(nga, attr, ATTR_IGMP_VALID_V3);
+	ret = readRequest(nga, attr);
 	if (ret < 0)
 		goto end;
+	
+	filterAttributes(attr, ATTR_IGMP_VALID_V3, ATTR_END);
 	
 	if (attr->first != NULL) {
 		at = attr->first->data;
@@ -972,9 +992,11 @@ int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb)
 		/* the list is destroyed by writeRequest, so we need to recreate it */
 		attr = createEmptyList();
 		pushBackList(attr, newByteAttr(ATTR_CABLETEST_RESULT, ct[i].port));
-		ret = readRequest(nga, attr, ATTR_CABLETEST_RESULT);
+		ret = readRequest(nga, attr);
 		if (ret < 0)
 			goto end;
+		
+		filterAttributes(attr, ATTR_CABLETEST_RESULT, ATTR_END);
 		
 		for (ln = attr->first; ln != NULL; ln = ln->next) {
 			at = ln->data;
@@ -1067,9 +1089,11 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_VLAN_TYPE));
-	ret=readRequest(nga, attr, ATTR_VLAN_TYPE);
+	ret=readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_VLAN_TYPE, ATTR_END);
 	
 	*t = VLAN_DISABLED;
 	
@@ -1126,9 +1150,11 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_VLAN_DOT_CONF));
-	ret = readRequest(nga, attr, ATTR_VLAN_DOT_CONF);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
 	memset(vlans, 0, total * sizeof(unsigned short));
 	memset(ports, 0, total * nga->current->ports);
@@ -1174,9 +1200,11 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 	
 	attr = createEmptyList();
 	pushBackList(attr, newShortAttr(ATTR_VLAN_DOT_CONF, vlan));
-	ret = readRequest(nga, attr, ATTR_END);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
 	memset(ports, 0, nga->current->ports);
 	
@@ -1232,9 +1260,11 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 	if (memchr(ports, VLAN_UNSPEC, sa->ports) != NULL) {
 		
 		pushBackList(attr, newShortAttr(ATTR_VLAN_DOT_CONF, vlan));
-		ret = readRequest(nga, attr, ATTR_VLAN_DOT_CONF);
+		ret = readRequest(nga, attr);
 		if (ret != ERR_OK)
 			goto end;
+		
+		filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 		
 		if (attr->first != NULL) {
 			at = attr->first->data;
@@ -1301,9 +1331,11 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports)
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_VLAN_PVID));
-	ret = readRequest(nga, attr, ATTR_VLAN_PVID);
+	ret = readRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;
+	
+	filterAttributes(attr, ATTR_VLAN_PVID, ATTR_END);
 	
 	memset(ports, 0, nga->current->ports * sizeof(unsigned short));
 	

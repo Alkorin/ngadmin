@@ -9,8 +9,9 @@
 #include <netinet/ether.h>
 #include <sys/ioctl.h>
 
-#include "attr.h"
-#include "protocol.h"
+#include <attr.h>
+#include <protocol.h>
+
 #include "network.h"
 
 
@@ -176,7 +177,7 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr)
 }
 
 
-int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr, unsigned short filter_attr)
+int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr)
 {
 	char buffer[1500];
 	struct ng_packet np;
@@ -212,8 +213,13 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
 		if (ntohs(remote.sin_port) != SWITCH_PORT ||
 		    len < (int)sizeof(struct ng_header) ||
 		    !validateNgHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, nga->seq) ||
-		    extractPacketAttributes(&np, error, attr_error, attr, filter_attr, sa == NULL ? 0 : sa->ports) < 0)
+		    extractPacketAttributes(&np, attr, sa == NULL ? 0 : sa->ports) < 0)
 			continue;
+		
+		if (error != NULL)
+			*error = np.nh->error;
+		if (attr_error != NULL)
+			*attr_error = ntohs(np.nh->attr);
 		
 		len = 0;
 		break;
@@ -237,7 +243,7 @@ static int checkErrorCode (unsigned char err, unsigned short attr_error)
 }
 
 
-int readRequest (struct ngadmin *nga, List *attr, unsigned short filter_attr)
+int readRequest (struct ngadmin *nga, List *attr)
 {
 	int i, ret = ERR_OK;
 	unsigned char err;
@@ -258,7 +264,7 @@ int readRequest (struct ngadmin *nga, List *attr, unsigned short filter_attr)
 	clearList(attr, (void(*)(void*))freeAttr);
 	
 	if (i >= 0)
-		i = recvNgPacket(nga, CODE_READ_REP, &err, &attr_error, attr, filter_attr);
+		i = recvNgPacket(nga, CODE_READ_REP, &err, &attr_error, attr);
 	
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
@@ -310,7 +316,7 @@ int writeRequest (struct ngadmin *nga, List *attr)
 	clearList(attr, (void(*)(void*))freeAttr);
 	
 	if (i >= 0)
-		i = recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr, ATTR_END);
+		i = recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr);
 	
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;

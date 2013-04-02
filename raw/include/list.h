@@ -55,6 +55,9 @@ void* popBackList (List *l);
 // Clears all the items of the list, and eventually frees them
 void clearList (List *l, void (*freefunc)(void*));
 
+// 
+bool destroyElement (List *l, ListNode *ln, void (*freefunc)(void*));
+
 // Find and destroy a particular element of the list, and eventually frees it
 bool findAndDestroy (List *l, void* data, void (*freefunc)(void*));
 

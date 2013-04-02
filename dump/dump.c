@@ -57,10 +57,10 @@ int main (void)
 		
 		attr = createEmptyList();
 		
-			if (ntohs(remote.sin_port) != CLIENT_PORT ||
+		if (ntohs(remote.sin_port) != CLIENT_PORT ||
 		    len < (int)sizeof(struct ng_header) ||
 		    !validateNgHeader(np.nh, 0, NULL, NULL, 0) ||
-		    extractPacketAttributes(&np, &error, &attr_error, attr, ATTR_END, 0) < 0) {
+		    extractPacketAttributes(&np, attr, 0) < 0) {
 			printf("wrong packet\n");
 			goto end;
 		}

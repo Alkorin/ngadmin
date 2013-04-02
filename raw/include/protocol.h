@@ -150,7 +150,10 @@ void freeAttr (struct attr *at);
 int addPacketAttributes (struct ng_packet *np, const List* attr, unsigned char ports);
 
 
-int extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr, unsigned short filter_attr, unsigned char ports);
+int extractPacketAttributes (struct ng_packet *np, List *attr, unsigned char ports);
+
+
+void filterAttributes (List *attr, ...);
 
 
 #endif

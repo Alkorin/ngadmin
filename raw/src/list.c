@@ -276,6 +276,59 @@ void clearList (List *l, void (*freefunc)(void*)) {
 
 
 
+static void __destroyElement (List *l, ListNode *ln, void (*freefunc)(void*)) {
+ 
+ 
+ if ( ln->prev==NULL ) {
+  l->first=ln->next;
+ } else {
+  ln->prev->next=ln->next;
+ }
+ 
+ if ( ln->next==NULL ) {
+  l->last=ln->prev;
+ } else {
+  ln->next->prev=ln->prev;
+ }
+ 
+ 
+ if ( freefunc!=NULL ) {
+  freefunc(ln->data);
+ }
+ 
+ l->count--;
+ free(ln);
+ 
+}
+
+
+
+// -----------------------------------------------------------------
+bool destroyElement (List *l, ListNode *ln, void (*freefunc)(void*)) {
+ 
+ 
+ if ( l==NULL || ln==NULL ) {
+  return false;
+ }
+ 
+ 
+ #ifdef MT_SAFE_LIST
+ pthread_mutex_lock(&l->mutex);
+ #endif
+ 
+ __destroyElement(l, ln, freefunc);
+ 
+ #ifdef MT_SAFE_LIST
+ pthread_mutex_unlock(&l->mutex);
+ #endif
+ 
+ 
+ return true;
+ 
+}
+
+
+
 // ---------------------------------------------------------------
 bool findAndDestroy (List *l, void* data, void (*freefunc)(void*)) {
  
@@ -302,24 +355,7 @@ bool findAndDestroy (List *l, void* data, void (*freefunc)(void*)) {
   
  } else {
   
-  if ( ln->prev==NULL ) {
-   l->first=ln->next;
-  } else {
-   ln->prev->next=ln->next;
-  }
-  
-  if ( ln->next==NULL ) {
-   l->last=ln->prev;
-  } else {
-   ln->next->prev=ln->prev;
-  }
-  
-  
-  if ( freefunc!=NULL ) {
-   freefunc(data);
-  }
-  
-  l->count--;
+  __destroyElement(l, ln, freefunc);
   
   #ifdef MT_SAFE_LIST
   pthread_mutex_unlock(&l->mutex);

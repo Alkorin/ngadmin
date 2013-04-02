@@ -149,7 +149,7 @@ int addPacketAttributes (struct ng_packet *np, const List* attr, unsigned char p
 }
 
 
-int extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigned short *attr_error, List *attr, unsigned short filter_attr, unsigned char ports)
+int extractPacketAttributes (struct ng_packet *np, List *attr, unsigned char ports)
 {
 	struct attr *at;
 	const struct attr_handler *ah;
@@ -157,11 +157,6 @@ int extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigne
 	unsigned short size;
 	bool valid;
 	
-	
-	if (error != NULL)
-		*error = np->nh->error;
-	if (attr_error != NULL)
-		*attr_error = ntohs(np->nh->attr);
 	
 	while (getPacketTotalSize(np) < np->maxlen) {
 		
@@ -197,11 +192,6 @@ int extractPacketAttributes (struct ng_packet *np, unsigned char *error, unsigne
 		/* decode attribute data */
 		valid = true;
 		
-		if (filter_attr != ATTR_END && at->attr != filter_attr) {
-			valid = false;
-			goto next;
-		}
-		
 		ah = getAttrHandler(at->attr);
 		if (at->data == NULL || ah == NULL)
 			goto next;
@@ -232,6 +222,40 @@ next:
 	
 	
 	return ret;
+}
+
+
+void filterAttributes (List *attr, ...)
+{
+	va_list ap;
+	ListNode *ln, *pr;
+	struct attr *at;
+	unsigned short attrcode;
+	bool keep;
+	
+	
+	ln = attr->first;
+	while (ln != NULL) {
+		at = ln->data;
+		
+		va_start(ap, attr);
+		keep = false;
+		attrcode = 0;
+		while (!keep && attrcode != ATTR_END) {
+			attrcode = (unsigned short)va_arg(ap, unsigned int);
+			keep = keep || (at->attr == attrcode);
+		}
+		va_end(ap);
+		
+		if (keep) {
+			ln = ln->next;
+		} else {
+			pr = ln;
+			ln = ln->next;
+			destroyElement(attr, pr, (void(*)(void*))freeAttr);
+		}
+	}
+	
 }
 
 

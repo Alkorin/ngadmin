@@ -22,10 +22,10 @@ int updateTimeout (struct ngadmin *nga);
 int sendNgPacket (struct ngadmin *nga, char code, const List *attr);
 
 
-int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr, unsigned short filter_attr);
+int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr);
 
 
-int readRequest (struct ngadmin *nga, List *attr, unsigned short filter_attr);
+int readRequest (struct ngadmin *nga, List *attr);
 
 
 int writeRequest (struct ngadmin *nga, List *attr);
