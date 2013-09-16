@@ -408,6 +408,7 @@ static const struct attr_handler attrtab[] = {
 	ATTR_HANDLER_ENTRY(ATTR_GATEWAY, 4, NULL, NULL),
 	ATTR_HANDLER_ENTRY(ATTR_DHCP, 2, NULL, NULL),
 	ATTR_HANDLER_ENTRY(ATTR_RESTART, 1, NULL, NULL),
+	ATTR_HANDLER_ENTRY(ATTR_ENCPASS, 4, NULL, NULL),
 	ATTR_HANDLER_ENTRY(ATTR_DEFAULTS, 1, NULL, NULL),
 	ATTR_HANDLER_ENTRY(ATTR_PORT_STATUS, sizeof(struct attr_port_status), NULL, ports_status_decode),
 	ATTR_HANDLER_ENTRY(ATTR_PORT_STATISTICS, sizeof(struct attr_port_stat), NULL, port_stat_decode),

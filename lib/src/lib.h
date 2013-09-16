@@ -26,6 +26,7 @@ struct ngadmin {
 	bool keepbroad;			/* keep broadcasting */
 	bool globalbroad;		/* use global broadcast address (255.255.255.255) */
 	/* switch properties */
+	bool encrypt_pass;		/* switch uses password "encryption" */
 	char password[PASSWORD_MAX];	/* password to use to login on switches */
 	struct swi_attr *swi_tab;	/* array of detected switches */
 	int swi_count;			/* number of detected switches */

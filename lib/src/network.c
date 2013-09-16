@@ -289,6 +289,7 @@ int writeRequest (struct ngadmin *nga, List *attr)
 	int i, ret = ERR_OK;
 	unsigned char err;
 	unsigned short attr_error;
+	struct attr *at;
 	
 	
 	if (nga == NULL) {
@@ -304,7 +305,10 @@ int writeRequest (struct ngadmin *nga, List *attr)
 		attr = createEmptyList();
 	
 	/* add password attribute to start */
-	pushFrontList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
+	at = newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password));
+	if (nga->encrypt_pass)
+		passwordEndecode(at->data, at->size);
+	pushFrontList(attr, at);
 	
 	/* add end attribute to end */
 	pushBackList(attr, newEmptyAttr(ATTR_END));

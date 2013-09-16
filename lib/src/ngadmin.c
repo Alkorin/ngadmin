@@ -219,6 +219,7 @@ const struct swi_attr* ngadmin_getCurrentSwitch (struct ngadmin *nga)
 int ngadmin_login (struct ngadmin *nga, int id)
 {
 	List *attr;
+	struct attr *at;
 	int ret = ERR_OK;
 	struct swi_attr *sa;
 	
@@ -230,8 +231,23 @@ int ngadmin_login (struct ngadmin *nga, int id)
 	
 	sa = &nga->swi_tab[id];
 	nga->current = sa;
+	nga->encrypt_pass = false;
 	
 	attr = createEmptyList();
+	pushBackList(attr, newEmptyAttr(ATTR_ENCPASS));
+	ret = readRequest(nga, attr);
+	if (ret != ERR_OK)
+		goto end;
+	
+	filterAttributes(attr, ATTR_ENCPASS, ATTR_END);
+	if (attr->first != NULL) {
+		at = attr->first->data;
+		nga->encrypt_pass = (at->size == 4 && ntohl(*(unsigned int*)at->data) == 1);
+	}
+	clearList(attr, (void(*)(void*))freeAttr);
+	
+	/* Strangely, passwords must never be encrypted inside a read request,
+	 * or it will be rejected. Seems more to be a firmware bug. */
 	pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
 	ret = readRequest(nga, attr);
 	if (ret == ERR_OK ) {
@@ -244,6 +260,7 @@ int ngadmin_login (struct ngadmin *nga, int id)
 		nga->current = NULL;
 	}
 	
+end:
 	destroyList(attr, (void(*)(void*))freeAttr);
 	
 	
@@ -393,6 +410,7 @@ int ngadmin_resetPortsStatistics (struct ngadmin *nga)
 int ngadmin_changePassword (struct ngadmin *nga, const char* pass)
 {
 	List *attr;
+	struct attr *at;
 	int ret = ERR_OK;
 	
 	
@@ -403,7 +421,10 @@ int ngadmin_changePassword (struct ngadmin *nga, const char* pass)
 	
 	
 	attr = createEmptyList();
-	pushBackList(attr, newAttr(ATTR_NEW_PASSWORD, strlen(pass), strdup(pass)));
+	at = newAttr(ATTR_NEW_PASSWORD, strlen(pass), strdup(pass));
+	if (nga->encrypt_pass)
+		passwordEndecode(at->data, at->size);
+	pushBackList(attr, at);
 	ret = writeRequest(nga, attr);
 	if (ret != ERR_OK)
 		goto end;

@@ -64,6 +64,11 @@ struct attr {
 };
 
 
+extern const char passwordKey[];
+
+
+void passwordEndecode (char *buf, unsigned int len);
+
 
 int trim (char *txt, int start);
 
