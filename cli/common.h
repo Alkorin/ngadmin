@@ -16,12 +16,11 @@
 #define NORET			__attribute__((noreturn))
 
 
-
 extern int cont;
 extern struct termios current_term;
 
 
-extern const char *bitrates[], *prio[];
+extern const char * const bitrates[], * const prio[];
 
 
 void displaySwitchTab (const struct swi_attr *sa, int nb);
@@ -30,12 +29,9 @@ int parseBitrate (const char *s);
 char parsePrio (const char *s);
 
 
-// 
 int trim (char *txt, int start);
 
-// 
 int explode (const char *commande, char** tab, int maximum);
-
 
 
 #endif
