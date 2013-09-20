@@ -2,14 +2,14 @@
 #include "commands.h"
 
 
-bool do_qos_mode (int nb, const char **com, struct ngadmin *nga)
+bool do_qos_mode (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i, s, ret = true;
 	const struct swi_attr *sa;
 	
 	
-	if (nb == 0) {
-		printf("Usage: qos mode port|802.1p\n");
+	if (argc == 0) {
+		printf("usage: qos mode port|802.1p\n");
 		goto end;
 	}
 	
@@ -20,9 +20,9 @@ bool do_qos_mode (int nb, const char **com, struct ngadmin *nga)
 		goto end;
 	}
 	
-	if (strcasecmp(com[0], "port") == 0) {
+	if (strcasecmp(argv[0], "port") == 0) {
 		s = QOS_PORT;
-	} else if (strcasecmp(com[0], "802.1p") == 0) {
+	} else if (strcasecmp(argv[0], "802.1p") == 0) {
 		s = QOS_DOT;
 	} else {
 		printf("Unknown QOS mode\n");
@@ -39,7 +39,7 @@ end:
 }
 
 
-bool do_qos_set (int nb, const char **com, struct ngadmin *nga)
+bool do_qos_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i, p;
 	const struct swi_attr *sa;
@@ -47,8 +47,8 @@ bool do_qos_set (int nb, const char **com, struct ngadmin *nga)
 	char d = PRIO_UNSPEC, *ports = NULL;
 	
 	
-	if (nb < 2) {
-		printf("Usage: qos set (all <prio0>)|(<port1> <prio1> [<port2> <prio2> ...])\n");
+	if (argc < 2) {
+		printf("usage: qos set (all <prio0>)|(<port1> <prio1> [<port2> <prio2> ...])\n");
 		ret = false;
 		goto end;
 	}
@@ -62,22 +62,26 @@ bool do_qos_set (int nb, const char **com, struct ngadmin *nga)
 	
 	ports = malloc(sa->ports * sizeof(char));
 	
-	if (strcmp(com[0], "all") == 0) {
-		d = parsePrio(com[1]);
-		com += 2;
-		nb -= 2;
+	/* read defaults */
+	if (strcmp(argv[0], "all") == 0) {
+		d = parsePrio(argv[1]);
+		argv += 2;
+		argc -= 2;
 	}
 	
+	/* apply defaults */
 	for (i = 0; i < sa->ports; i++)
 		ports[i] = d;
 	
-	for (i = 0; i < nb; i += 2) {
-		p = strtol(com[i], NULL, 0);
+	/* read and apply port specifics */
+	for (i = 0; i < argc; i += 2) {
+		p = strtol(argv[i], NULL, 0);
 		if (p < 1 || p > sa->ports)
 			continue;
-		ports[p - 1] = parsePrio(com[i + 1]);
+		ports[p - 1] = parsePrio(argv[i + 1]);
 	}
 	
+	/* send the new configuration to the switch */
 	i = ngadmin_setQOSValues(nga, ports);
 	printErrCode(i);
 	
@@ -88,12 +92,18 @@ end:
 }
 
 
-bool do_qos_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_qos_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i, s = 0, ret = true;
 	const struct swi_attr *sa;
 	char *ports = NULL;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {

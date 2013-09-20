@@ -2,13 +2,19 @@
 #include "commands.h"
 
 
-bool do_help (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga UNUSED)
+bool do_help (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
 {
 	const struct TreeNode *s;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
+	
 	printf("Available commands: \n");
 	
-	for (s = coms.sub; s->name != NULL; s++)
+	for (s = commands.sub; s->name != NULL; s++)
 		printf("%s ", s->name);
 	putchar('\n');
 	

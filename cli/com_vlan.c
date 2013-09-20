@@ -22,18 +22,17 @@ static char vlan_char (int t)
 }
 
 
-bool do_vlan_8021q_del (int nb, const char **com, struct ngadmin *nga)
+bool do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	unsigned short vlan;
 	int i;
 	
 	
-	if (nb != 1) {
-		printf("Usage: vlan 8021q del <vlan>\n");
+	if (argc != 1) {
+		printf("usage: vlan 8021q del <vlan>\n");
 		return false;
 	}
-	
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
@@ -41,7 +40,7 @@ bool do_vlan_8021q_del (int nb, const char **com, struct ngadmin *nga)
 		return false;
 	}
 	
-	vlan=strtoul(com[0], NULL, 0);
+	vlan=strtoul(argv[0], NULL, 0);
 	if (vlan < 1 || vlan > VLAN_MAX) {
 		printf("vlan out of range\n");
 		return false;
@@ -55,7 +54,7 @@ bool do_vlan_8021q_del (int nb, const char **com, struct ngadmin *nga)
 }
 
 
-bool do_vlan_8021q_set (int nb, const char **com, struct ngadmin *nga)
+bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	unsigned char *ports = NULL, p, def = VLAN_UNSPEC;
 	const struct swi_attr *sa;
@@ -64,8 +63,8 @@ bool do_vlan_8021q_set (int nb, const char **com, struct ngadmin *nga)
 	int i, k = 0;
 	
 	
-	if (nb == 0) {
-		printf("Usage: vlan 802.1q set <vlan> [all unspec|no|untagged|tagged] [<port1> unspec|no|untagged|tagged ...]\n");
+	if (argc == 0) {
+		printf("usage: vlan 802.1q set <vlan> [all unspec|no|untagged|tagged] [<port1> unspec|no|untagged|tagged ...]\n");
 		ret = false;
 		goto end;
 	}
@@ -78,7 +77,7 @@ bool do_vlan_8021q_set (int nb, const char **com, struct ngadmin *nga)
 	}
 	
 	/* read vlan */
-	vlan = strtoul(com[k++], NULL, 0);
+	vlan = strtoul(argv[k++], NULL, 0);
 	
 	if (vlan < 1 || vlan > VLAN_MAX) {
 		printf("vlan out of range\n");
@@ -87,15 +86,15 @@ bool do_vlan_8021q_set (int nb, const char **com, struct ngadmin *nga)
 	}
 	
 	/* read defaults */
-	if (k < nb - 1 && strcasecmp(com[k], "all") == 0) {
+	if (k < argc - 1 && strcasecmp(argv[k], "all") == 0) {
 		k++;
-		if (strcasecmp(com[k], "tagged") == 0) {
+		if (strcasecmp(argv[k], "tagged") == 0) {
 			def = VLAN_TAGGED;
-		} else if (strcasecmp(com[k], "untagged") == 0) {
+		} else if (strcasecmp(argv[k], "untagged") == 0) {
 			def = VLAN_UNTAGGED;
-		} else if (strcasecmp(com[k], "no") == 0) {
+		} else if (strcasecmp(argv[k], "no") == 0) {
 			def = VLAN_NO;
-		} else if (strcasecmp(com[k], "unspec") == 0) {
+		} else if (strcasecmp(argv[k], "unspec") == 0) {
 			def = VLAN_UNSPEC;
 		} else {
 			printf("incorrect type\n");
@@ -111,20 +110,20 @@ bool do_vlan_8021q_set (int nb, const char **com, struct ngadmin *nga)
 	memset(ports, def, sa->ports);
 	
 	/* apply port specifics */
-	while (k < nb - 1) {
-		p = strtoul(com[k++], NULL, 0) - 1;
+	while (k < argc - 1) {
+		p = strtoul(argv[k++], NULL, 0) - 1;
 		if (p >= sa->ports) {
 			printf("port out of range\n");
 			ret = false;
 			goto end;
 		}
-		if (strcasecmp(com[k], "tagged") ==0) {
+		if (strcasecmp(argv[k], "tagged") ==0) {
 			ports[p] = VLAN_TAGGED;
-		} else if (strcasecmp(com[k], "untagged") == 0) {
+		} else if (strcasecmp(argv[k], "untagged") == 0) {
 			ports[p] = VLAN_UNTAGGED;
-		} else if (strcasecmp(com[k], "no") == 0) {
+		} else if (strcasecmp(argv[k], "no") == 0) {
 			ports[p] = VLAN_NO;
-		} else if (strcasecmp(com[k], "unspec") == 0) {
+		} else if (strcasecmp(argv[k], "unspec") == 0) {
 			ports[p] = VLAN_UNSPEC;
 		} else {
 			printf("incorrect type\n");
@@ -145,7 +144,7 @@ end:
 }
 
 
-bool do_vlan_8021q_show (int nb, const char **com, struct ngadmin *nga)
+bool do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga)
 {
 	unsigned short vl = 0, *vlans = NULL;
 	unsigned char *ports = NULL;
@@ -161,8 +160,8 @@ bool do_vlan_8021q_show (int nb, const char **com, struct ngadmin *nga)
 		goto end;
 	}
 	
-	if (nb > 0)
-		vl = strtoul(com[0], NULL, 0);
+	if (argc > 0)
+		vl = strtoul(argv[0], NULL, 0);
 	
 	ports = malloc(sa->ports * n * sizeof(unsigned char));
 	
@@ -213,14 +212,14 @@ end:
 }
 
 
-bool do_vlan_mode_set (int nb, const char **com, struct ngadmin *nga)
+bool do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int mode, i;
 	
 	
-	if (nb == 0) {
+	if (argc == 0) {
 		printf(
-		"Usage: vlan mode set <mode>\n"
+		"usage: vlan mode set <mode>\n"
 		"1 - basic port based\n"
 		"2 - advanced port based\n"
 		"3 - basic 802.1Q\n"
@@ -234,7 +233,7 @@ bool do_vlan_mode_set (int nb, const char **com, struct ngadmin *nga)
 		return false;
 	}
 	
-	mode = strtoul(com[0], NULL, 0);
+	mode = strtoul(argv[0], NULL, 0);
 	if (mode < 1 || mode > 4) {
 		printf("mode out of range\n");
 		return false;
@@ -248,10 +247,16 @@ bool do_vlan_mode_set (int nb, const char **com, struct ngadmin *nga)
 }
 
 
-bool do_vlan_mode_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_vlan_mode_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i, t, ret = true;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
@@ -299,7 +304,7 @@ end:
 }
 
 
-bool do_vlan_pvid_set (int nb, const char **com, struct ngadmin *nga)
+bool do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	unsigned char port;
@@ -307,8 +312,8 @@ bool do_vlan_pvid_set (int nb, const char **com, struct ngadmin *nga)
 	int i;
 	
 	
-	if (nb != 2) {
-		printf("Usage: vlan pvid set <port> <vlan>\n");
+	if (argc != 2) {
+		printf("usage: vlan pvid set <port> <vlan>\n");
 		return false;
 	}
 	
@@ -318,8 +323,8 @@ bool do_vlan_pvid_set (int nb, const char **com, struct ngadmin *nga)
 		return false;
 	}
 	
-	port = strtoul(com[0], NULL, 0);
-	vlan = strtoul(com[1], NULL, 0);
+	port = strtoul(argv[0], NULL, 0);
+	vlan = strtoul(argv[1], NULL, 0);
 	
 	if (port < 1 || port > sa->ports) {
 		printf("port out of range\n");
@@ -339,13 +344,19 @@ bool do_vlan_pvid_set (int nb, const char **com, struct ngadmin *nga)
 }
 
 
-bool do_vlan_pvid_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_vlan_pvid_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	unsigned short *ports = NULL;
 	const struct swi_attr *sa;
 	int i;
 	bool ret = true;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {

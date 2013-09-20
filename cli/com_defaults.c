@@ -2,12 +2,18 @@
 #include "commands.h"
 
 
-bool do_defaults (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_defaults (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i, ret = true;
 	const struct swi_attr *sa;
 	char line[16];
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {

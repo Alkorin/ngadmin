@@ -2,11 +2,16 @@
 #include "commands.h"
 
 
-bool do_stormfilter_enable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_stormfilter_enable (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
@@ -22,11 +27,16 @@ bool do_stormfilter_enable (int nb UNUSED, const char **com UNUSED, struct ngadm
 }
 
 
-bool do_stormfilter_disable (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_stormfilter_disable (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
@@ -42,15 +52,15 @@ bool do_stormfilter_disable (int nb UNUSED, const char **com UNUSED, struct ngad
 }
 
 
-bool do_stormfilter_set (int nb, const char **com, struct ngadmin *nga)
+bool do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i, d = BITRATE_UNSPEC, p, *ports = NULL;
 	const struct swi_attr *sa;
 	bool ret = true;
 	
 	
-	if (nb < 2) {
-		printf("Usage: stormfilt set (all <speed0>)|(<port1> <speed1> [<port2> <speed2> ...])\n");
+	if (argc < 2) {
+		printf("usage: stormfilt set (all <speed0>)|(<port1> <speed1> [<port2> <speed2> ...])\n");
 		ret = false;
 		goto end;
 	}
@@ -62,24 +72,28 @@ bool do_stormfilter_set (int nb, const char **com, struct ngadmin *nga)
 		goto end;
 	}
 	
-	ports=malloc(sa->ports * sizeof(int));
+	ports = malloc(sa->ports * sizeof(int));
 	
-	if (strcmp(com[0], "all") == 0) {
-		d = parseBitrate(com[1]);
-		com += 2;
-		nb -= 2;
+	/* read defaults */
+	if (strcmp(argv[0], "all") == 0) {
+		d = parseBitrate(argv[1]);
+		argv += 2;
+		argc -= 2;
 	}
 	
+	/* apply defaults */
 	for (i = 0; i < sa->ports; i++)
 		ports[i] = d;
 	
-	for (i = 0; i < nb; i += 2) {
-		p = strtol(com[i], NULL, 0);
+	/* read and apply port specifics */
+	for (i = 0; i < argc - 1; i += 2) {
+		p = strtol(argv[i], NULL, 0);
 		if (p < 1 || p > sa->ports)
 			continue;
-		ports[p - 1] = parseBitrate(com[i + 1]);
+		ports[p - 1] = parseBitrate(argv[i + 1]);
 	}
 	
+	/* send the new configuration to the switch */
 	i = ngadmin_setStormFilterValues(nga, ports);
 	printErrCode(i);
 	
@@ -90,11 +104,17 @@ end:
 }
 
 
-bool do_stormfilter_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_stormfilter_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i, s, ret = true, *ports = NULL;
 	const struct swi_attr *sa;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {

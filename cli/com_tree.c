@@ -20,9 +20,14 @@ static void display_node (const struct TreeNode *tn, int depth)
 }
 
 
-bool do_tree (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga UNUSED)
+bool do_tree (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
 {
-	display_node(&coms, 0);
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
+	
+	display_node(&commands, 0);
 	
 	return true;
 }

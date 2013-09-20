@@ -2,10 +2,15 @@
 #include "commands.h"
 
 
-bool do_name_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_name_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
@@ -20,14 +25,14 @@ bool do_name_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
 }
 
 
-bool do_name_set (int nb, const char **com, struct ngadmin *nga)
+bool do_name_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	
 	
-	if (nb != 1) {
-		printf("Usage: name set <value>\n");
+	if (argc != 1) {
+		printf("usage: name set <value>\n");
 		return false;
 	}
 	
@@ -37,7 +42,7 @@ bool do_name_set (int nb, const char **com, struct ngadmin *nga)
 		return false;
 	}
 	
-	i = ngadmin_setName(nga, com[0]);
+	i = ngadmin_setName(nga, argv[0]);
 	printErrCode(i);
 	
 	
@@ -45,11 +50,16 @@ bool do_name_set (int nb, const char **com, struct ngadmin *nga)
 }
 
 
-bool do_name_clear (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_name_clear (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {

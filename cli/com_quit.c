@@ -2,9 +2,14 @@
 #include "commands.h"
 
 
-bool do_quit (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga UNUSED)
+bool do_quit (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
 {
-	cont = 0;
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
+	
+	main_loop_continue = 0;
 	
 	return true;
 }

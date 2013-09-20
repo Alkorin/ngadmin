@@ -2,13 +2,19 @@
 #include "commands.h"
 
 
-bool do_ports_state (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_ports_state (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	unsigned char *ports = NULL;
 	bool ret = true;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
@@ -59,9 +65,15 @@ end:
 }
 
 
-bool do_ports_statistics_reset (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_ports_statistics_reset (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
+	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return false;
+	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
@@ -75,13 +87,19 @@ bool do_ports_statistics_reset (int nb UNUSED, const char **com UNUSED, struct n
 }
 
 
-bool do_ports_statistics_show (int nb UNUSED, const char **com UNUSED, struct ngadmin *nga)
+bool do_ports_statistics_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	bool ret = true;
 	struct port_stats *ps = NULL;
 	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = false;
+		goto end;
+	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {

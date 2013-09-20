@@ -2,14 +2,14 @@
 #include "commands.h"
 
 
-bool do_password_change (int nb, const char **com, struct ngadmin *nga)
+bool do_password_change (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
 	
 	
-	if (nb != 1) {
-		printf("Usage: password change <value>\n");
+	if (argc != 1) {
+		printf("usage: password change <value>\n");
 		return false;
 	}
 	
@@ -19,7 +19,7 @@ bool do_password_change (int nb, const char **com, struct ngadmin *nga)
 		return false;
 	}
 	
-	i = ngadmin_changePassword(nga, com[0]);
+	i = ngadmin_changePassword(nga, argv[0]);
 	printErrCode(i);
 	
 	
@@ -27,19 +27,19 @@ bool do_password_change (int nb, const char **com, struct ngadmin *nga)
 }
 
 
-bool do_password_set (int nb, const char **com, struct ngadmin *nga)
+bool do_password_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	char buf[64];
 	const char *pass;
 	
 	
-	if (nb > 1) {
-		printf("Usage: password set [<value>]\n");
+	if (argc > 1) {
+		printf("usage: password set [<value>]\n");
 		return false;
 	}
 	
-	if (nb == 0) {
+	if (argc == 0) {
 		printf("Enter password: ");
 		fflush(stdout);
 		current_term.c_lflag &= ~ECHO;
@@ -50,7 +50,7 @@ bool do_password_set (int nb, const char **com, struct ngadmin *nga)
 		tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
 		putchar('\n');
 	} else {
-		pass = com[0];
+		pass = argv[0];
 	}
 	
 	if (pass != NULL) {

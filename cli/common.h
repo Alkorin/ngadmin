@@ -16,7 +16,7 @@
 #define NORET			__attribute__((noreturn))
 
 
-extern int cont;
+extern int main_loop_continue;
 extern struct termios current_term;
 
 

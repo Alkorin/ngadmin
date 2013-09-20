@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_cabletest (int nb, const char **com, struct ngadmin *nga)
+bool do_cabletest (int argc, const char **argv, struct ngadmin *nga)
 {
 	bool ret = true;
 	const struct swi_attr *sa;
@@ -10,11 +10,10 @@ bool do_cabletest (int nb, const char **com, struct ngadmin *nga)
 	int i, j=0, k=0;
 	
 	
-	if (nb < 1) {
-		printf("Usage: cabletest <port1> [<port2> ...]\n");
+	if (argc < 1) {
+		printf("usage: cabletest <port1> [<port2> ...]\n");
 		goto end;
 	}
-	
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
@@ -26,8 +25,8 @@ bool do_cabletest (int nb, const char **com, struct ngadmin *nga)
 	ct = malloc(sa->ports * sizeof(struct cabletest));
 	memset(ct, 0, sa->ports * sizeof(struct cabletest));
 	
-	while (k < nb) {
-		ct[j].port = strtol(com[k++], NULL, 0);
+	while (k < argc) {
+		ct[j].port = strtol(argv[k++], NULL, 0);
 		if (ct[j].port >= 1 && ct[j].port <= sa->ports)
 			j++;
 	}

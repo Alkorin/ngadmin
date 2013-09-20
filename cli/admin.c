@@ -14,7 +14,7 @@
 #define MAXCOM	32
 
 
-int cont = 1;
+int main_loop_continue = 1;
 
 
 static const struct TreeNode* getSubCom (char **com, int n, int *t)
@@ -23,7 +23,7 @@ static const struct TreeNode* getSubCom (char **com, int n, int *t)
 	const struct TreeNode *cur, *next;
 	
 	
-	cur = &coms;
+	cur = &commands;
 	for (i = 0; i < n; i++) {
 		/* we have reached a terminal command, exit */
 		if (cur->sub == NULL)
@@ -180,7 +180,7 @@ int main (int argc, char **argv)
 			break;
 		
 		case 'h':
-			printf("Usage: %s [-b] [-f] [-g] [-i <interface>]\n", argv[0]);
+			printf("usage: %s [-b] [-f] [-g] [-i <interface>]\n", argv[0]);
 			goto end;
 		
 		case 't':
@@ -235,7 +235,7 @@ int main (int argc, char **argv)
 	
 	sigsetjmp(jmpbuf, 1);
 	
-	while (cont) {
+	while (main_loop_continue) {
 		line = readline("> ");
 		if (line == NULL)
 			goto end;
@@ -252,29 +252,27 @@ int main (int argc, char **argv)
 		
 		cur = getSubCom(com, n, &i);
 		
-		if (i < n) { /* commands left unchecked */
-			if (i == 0) { /* root command */
-				printf("unknown command\n");
-			} else if (cur->sub != NULL) { /* intermediate command */
-				printf("unknown %s subcommand\n", com[i - 1]);
-			} else if (!cur->hasArgs) { /* terminal command without arguments */
-				printf("%s as no subcommand and takes no parameter\n", com[i - 1]);
-			} else if (cur->comfunc == NULL) { /* erroneous terminal command without function */
-				printf("terminal command without function\n");
-			} else { /* terminal command with arguments, left "commands" are in fact parameters */
-				cur->comfunc(n - i, (const char**)&com[i], nga);
-			}
-		} else { /* no command left */
-			if (cur->sub != NULL) { /* intermediate command */
+		if (cur->sub != NULL) {
+			/* not terminal command */
+			if (i == 0) {
+				/* root command */
+				printf("unknown command: %s\n", com[i]);
+			} else if (i < n) {
+				/* intermediate command, remaining string */
+				printf("unknown %s subcommand: %s\n", com[i - 1], com[i]);
+			} else {
+				/* intermediate command, no remaining string */
 				/* print available subcommands */
 				for (next = cur->sub; next->name != NULL; next++)
 					printf("%s ", next->name);
-				printf("\n");
-			} else if (cur->comfunc == NULL) { /* erroneous terminal command without function */
-				printf("terminal command without function\n");
-			} else { /* terminal command without arguments */
-				cur->comfunc(0, NULL, nga); 
+				putchar('\n');
 			}
+		} else if (cur->comfunc == NULL) {
+			/* erroneous terminal command without function */
+			printf("terminal command without function\n");
+		} else {
+			/* execute terminal command */
+			cur->comfunc(n - i, (const char**)&com[i], nga);
 		}
 		
 		for (i = 0; com[i] != NULL; i++) {
