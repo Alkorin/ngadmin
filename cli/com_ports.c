@@ -2,24 +2,23 @@
 #include "commands.h"
 
 
-bool do_ports_state (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_ports_state (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i;
+	int i, ret = 0;
 	const struct swi_attr *sa;
 	unsigned char *ports = NULL;
-	bool ret = true;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -27,7 +26,7 @@ bool do_ports_state (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	i = ngadmin_getPortsStatus(nga, ports);
 	if (i < 0) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -65,46 +64,45 @@ end:
 }
 
 
-bool do_ports_statistics_reset (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_ports_statistics_reset (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_resetPortsStatistics(nga);
 	printErrCode(i);
 	
-	return true;
+	return 0;
 }
 
 
-bool do_ports_statistics_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_ports_statistics_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i;
+	int i, ret = 0;
 	const struct swi_attr *sa;
-	bool ret = true;
 	struct port_stats *ps = NULL;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -112,7 +110,7 @@ bool do_ports_statistics_show (int argc, const char **argv UNUSED, struct ngadmi
 	i = ngadmin_getPortsStatistics(nga, ps);
 	if (i < 0) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

@@ -3,104 +3,104 @@
 
 
 /* bitrate */
-bool do_bitrate_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_bitrate_show (int argc, const char **argv, struct ngadmin *nga);
+int do_bitrate_set (int argc, const char **argv, struct ngadmin *nga);
+int do_bitrate_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* cabletest */
-bool do_cabletest (int argc, const char **argv, struct ngadmin *nga);
+int do_cabletest (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* defaults */
-bool do_defaults (int argc, const char **argv, struct ngadmin *nga);
+int do_defaults (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* firmware */
-bool do_firmware_show (int argc, const char **argv, struct ngadmin *nga);
-bool do_firmware_upgrade (int argc, const char **argv, struct ngadmin *nga);
+int do_firmware_show (int argc, const char **argv, struct ngadmin *nga);
+int do_firmware_upgrade (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* help */
-bool do_help (int argc, const char **argv, struct ngadmin *nga);
+int do_help (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* igmp */
-bool do_igmp_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_igmp_show (int argc, const char **argv, struct ngadmin *nga);
+int do_igmp_set (int argc, const char **argv, struct ngadmin *nga);
+int do_igmp_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* list */
-bool do_list (int argc, const char **argv, struct ngadmin *nga);
+int do_list (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* login */
-bool do_login (int argc, const char **argv, struct ngadmin *nga);
+int do_login (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* mirror */
-bool do_mirror_disable (int argc, const char **argv, struct ngadmin *nga);
-bool do_mirror_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_mirror_show (int argc, const char **argv, struct ngadmin *nga);
+int do_mirror_disable (int argc, const char **argv, struct ngadmin *nga);
+int do_mirror_set (int argc, const char **argv, struct ngadmin *nga);
+int do_mirror_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* name */
-bool do_name_show (int argc, const char **argv, struct ngadmin *nga);
-bool do_name_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_name_clear (int argc, const char **argv, struct ngadmin *nga);
+int do_name_show (int argc, const char **argv, struct ngadmin *nga);
+int do_name_set (int argc, const char **argv, struct ngadmin *nga);
+int do_name_clear (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* netconf */
-bool do_netconf_set (int argc, const char **argv, struct ngadmin *nga);
+int do_netconf_set (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* password */
-bool do_password_change (int argc, const char **argv, struct ngadmin *nga);
-bool do_password_set (int argc, const char **argv, struct ngadmin *nga);
+int do_password_change (int argc, const char **argv, struct ngadmin *nga);
+int do_password_set (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* ports */
-bool do_ports_state (int argc, const char **argv, struct ngadmin *nga);
-bool do_ports_statistics_reset (int argc, const char **argv, struct ngadmin *nga);
-bool do_ports_statistics_show (int argc, const char **argv, struct ngadmin *nga);
+int do_ports_state (int argc, const char **argv, struct ngadmin *nga);
+int do_ports_statistics_reset (int argc, const char **argv, struct ngadmin *nga);
+int do_ports_statistics_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* qos */
-bool do_qos_mode (int argc, const char **argv, struct ngadmin *nga);
-bool do_qos_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_qos_show (int argc, const char **argv, struct ngadmin *nga);
+int do_qos_mode (int argc, const char **argv, struct ngadmin *nga);
+int do_qos_set (int argc, const char **argv, struct ngadmin *nga);
+int do_qos_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* quit */
-bool do_quit (int argc, const char **argv, struct ngadmin *nga);
+int do_quit (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* restart */
-bool do_restart (int argc, const char **argv, struct ngadmin *nga);
+int do_restart (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* scan */
-bool do_scan (int argc, const char **argv, struct ngadmin *nga);
+int do_scan (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* stormfilter */
-bool do_stormfilter_enable (int argc, const char **argv, struct ngadmin *nga);
-bool do_stormfilter_disable (int argc, const char **argv, struct ngadmin *nga);
-bool do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_stormfilter_show (int argc, const char **argv, struct ngadmin *nga);
+int do_stormfilter_enable (int argc, const char **argv, struct ngadmin *nga);
+int do_stormfilter_disable (int argc, const char **argv, struct ngadmin *nga);
+int do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga);
+int do_stormfilter_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* tree */
-bool do_tree (int argc, const char **argv, struct ngadmin *nga);
+int do_tree (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* vlan */
-bool do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga);
-bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga);
-bool do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_vlan_mode_show (int argc, const char **argv, struct ngadmin *nga);
-bool do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga);
-bool do_vlan_pvid_show (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_mode_show (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_pvid_show (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* commands structure */

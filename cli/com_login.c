@@ -9,7 +9,7 @@ bool do_login (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (argc != 1) {
 		printf("usage: login <num>\n");
-		return false;
+		return 1;
 	}
 	
 	i = strtol(argv[0], NULL, 0);
@@ -17,7 +17,7 @@ bool do_login (int argc, const char **argv, struct ngadmin *nga)
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 

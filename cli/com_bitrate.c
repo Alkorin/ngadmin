@@ -28,25 +28,25 @@ static int bitrate_analyse (int argc, const char **argv, int *ports)
 }
 
 
-bool do_bitrate_set (int argc, const char **argv, struct ngadmin *nga)
+int do_bitrate_set (int argc, const char **argv, struct ngadmin *nga)
 {
-	int i, k = 0, defs[] = {12, 12}, p, *ports = NULL;
+	int i, k = 0, defs[] = {12, 12}, p, *ports = NULL, ret = 0;
 	const struct swi_attr *sa;
-	bool ret = true;
+	
 	
 	if (argc < 2) {
 		printf(
 		"usage: bitrate set [all SPEEDSPEC] <port1> SPEEDSPEC [<port2> SPEEDSPEC ...]\n"
 		"SPEEDSPEC: [inout <speed>] [in <ispeed>] [out <ospeed>]\n"
 		);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -80,22 +80,22 @@ end:
 }
 
 
-bool do_bitrate_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_bitrate_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i, ret = true, *ports = NULL;
+	int i, ret = 0, *ports = NULL;
 	const struct swi_attr *sa;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -104,7 +104,7 @@ bool do_bitrate_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	i = ngadmin_getBitrateLimits(nga, ports);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

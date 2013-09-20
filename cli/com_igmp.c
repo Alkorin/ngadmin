@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_igmp_set (int argc, const char **argv, struct ngadmin *nga)
+int do_igmp_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	struct igmp_conf ic;
@@ -10,12 +10,12 @@ bool do_igmp_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (argc != 4) {
 		printf("usage: igmp set <enable> <vlan> <validate> <block>\n");
-		return false;
+		return 1;
 	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	ic.enable = strtol(argv[0], NULL, 0);
@@ -27,35 +27,34 @@ bool do_igmp_set (int argc, const char **argv, struct ngadmin *nga)
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_igmp_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_igmp_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i;
+	int i, ret = 0;
 	const struct swi_attr *sa;
 	struct igmp_conf ic;
-	bool ret = true;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	i = ngadmin_getIGMPConf(nga, &ic);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

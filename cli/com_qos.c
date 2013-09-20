@@ -2,9 +2,9 @@
 #include "commands.h"
 
 
-bool do_qos_mode (int argc, const char **argv, struct ngadmin *nga)
+int do_qos_mode (int argc, const char **argv, struct ngadmin *nga)
 {
-	int i, s, ret = true;
+	int i, s, ret = 0;
 	const struct swi_attr *sa;
 	
 	
@@ -16,7 +16,7 @@ bool do_qos_mode (int argc, const char **argv, struct ngadmin *nga)
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -26,7 +26,7 @@ bool do_qos_mode (int argc, const char **argv, struct ngadmin *nga)
 		s = QOS_DOT;
 	} else {
 		printf("Unknown QOS mode\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -39,24 +39,23 @@ end:
 }
 
 
-bool do_qos_set (int argc, const char **argv, struct ngadmin *nga)
+int do_qos_set (int argc, const char **argv, struct ngadmin *nga)
 {
-	int i, p;
+	int i, p, ret = 0;
 	const struct swi_attr *sa;
-	bool ret = true;
 	char d = PRIO_UNSPEC, *ports = NULL;
 	
 	
 	if (argc < 2) {
 		printf("usage: qos set (all <prio0>)|(<port1> <prio1> [<port2> <prio2> ...])\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa ==NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -92,30 +91,30 @@ end:
 }
 
 
-bool do_qos_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_qos_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i, s = 0, ret = true;
+	int i, s = 0, ret = 0;
 	const struct swi_attr *sa;
 	char *ports = NULL;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	i = ngadmin_getQOSMode(nga, &s);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -139,7 +138,7 @@ bool do_qos_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	i = ngadmin_getQOSValues(nga, ports);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

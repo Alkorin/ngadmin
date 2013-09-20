@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_scan (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_scan (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
@@ -10,20 +10,20 @@ bool do_scan (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_scan(nga);
 	if (i < 0) {
 		printErrCode(i);
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getSwitchTab(nga, &i);
 	displaySwitchTab(sa, i);
 	
 	
-	return true;
+	return 0;
 }
 
 

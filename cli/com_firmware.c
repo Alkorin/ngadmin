@@ -2,22 +2,22 @@
 #include "commands.h"
 
 
-bool do_firmware_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_firmware_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
-	bool ret = true;
+	int ret = 0;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -29,23 +29,22 @@ end:
 }
 
 
-bool do_firmware_upgrade (int argc, const char **argv, struct ngadmin *nga)
+int do_firmware_upgrade (int argc, const char **argv, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
-	bool ret = true;
-	int i;
+	int i, ret = 0;
 	
 	
 	if (argc != 1) {
 		printf("usage: firmware upgrade <file>\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

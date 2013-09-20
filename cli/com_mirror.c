@@ -2,35 +2,34 @@
 #include "commands.h"
 
 
-bool do_mirror_disable (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_mirror_disable (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_setMirror(nga, NULL);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_mirror_set (int argc, const char **argv, struct ngadmin *nga)
+int do_mirror_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	char *ports = NULL;
-	bool ret = true;
-	int i, k = 0;
+	int i, k = 0, ret = 0;
 	
 	
 	if (argc < 3) {
@@ -41,7 +40,7 @@ bool do_mirror_set (int argc, const char **argv, struct ngadmin *nga)
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -51,7 +50,7 @@ bool do_mirror_set (int argc, const char **argv, struct ngadmin *nga)
 	ports[0] = strtol(argv[k++], NULL, 0);
 	if (ports[0] < 1 || ports[0] > sa->ports || strcasecmp(argv[k++], "clone") != 0) {
 		printf("syntax error\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -59,11 +58,11 @@ bool do_mirror_set (int argc, const char **argv, struct ngadmin *nga)
 		i = strtol(argv[k++], NULL, 0);
 		if (i < 1 || i > sa->ports) {
 			printf("port out of range\n");
-			ret = false;
+			ret = 1;
 			goto end;
 		} else if (i == ports[0]) {
 			printf("destination port cannot be in port list\n");
-			ret = false;
+			ret = 1;
 			goto end;
 		}
 		ports[i] = 1;
@@ -79,7 +78,7 @@ end:
 }
 
 
-bool do_mirror_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_mirror_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	char *ports = NULL;
@@ -88,13 +87,13 @@ bool do_mirror_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	ports = malloc((sa->ports + 1) * sizeof(char));
@@ -121,7 +120,7 @@ bool do_mirror_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 end:
 	free(ports);
 	
-	return true;
+	return 0;
 }
 
 

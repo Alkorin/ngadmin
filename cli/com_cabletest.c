@@ -2,12 +2,11 @@
 #include "commands.h"
 
 
-bool do_cabletest (int argc, const char **argv, struct ngadmin *nga)
+int do_cabletest (int argc, const char **argv, struct ngadmin *nga)
 {
-	bool ret = true;
 	const struct swi_attr *sa;
 	struct cabletest *ct = NULL;
-	int i, j=0, k=0;
+	int i, j = 0, k = 0, ret = 0;
 	
 	
 	if (argc < 1) {
@@ -18,7 +17,7 @@ bool do_cabletest (int argc, const char **argv, struct ngadmin *nga)
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -34,7 +33,7 @@ bool do_cabletest (int argc, const char **argv, struct ngadmin *nga)
 	i = ngadmin_cabletest(nga, ct, j);
 	if (i < 0) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

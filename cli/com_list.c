@@ -10,13 +10,14 @@ bool do_list (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getSwitchTab(nga, &n);
 	displaySwitchTab(sa, n);
 	
-	return true;
+	
+	return 0;
 }
 
 

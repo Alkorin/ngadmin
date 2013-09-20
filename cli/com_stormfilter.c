@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_stormfilter_enable (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_stormfilter_enable (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
@@ -10,24 +10,24 @@ bool do_stormfilter_enable (int argc, const char **argv UNUSED, struct ngadmin *
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_setStormFilterState(nga, 1);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_stormfilter_disable (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_stormfilter_disable (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
@@ -35,40 +35,39 @@ bool do_stormfilter_disable (int argc, const char **argv UNUSED, struct ngadmin 
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_setStormFilterState(nga, 0);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga)
+int do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga)
 {
-	int i, d = BITRATE_UNSPEC, p, *ports = NULL;
+	int i, d = BITRATE_UNSPEC, p, *ports = NULL, ret = 0;
 	const struct swi_attr *sa;
-	bool ret = true;
 	
 	
 	if (argc < 2) {
 		printf("usage: stormfilt set (all <speed0>)|(<port1> <speed1> [<port2> <speed2> ...])\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -104,29 +103,29 @@ end:
 }
 
 
-bool do_stormfilter_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_stormfilter_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i, s, ret = true, *ports = NULL;
+	int i, s, ret = 0, *ports = NULL;
 	const struct swi_attr *sa;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	i = ngadmin_getStormFilterState(nga, &s);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -141,7 +140,7 @@ bool do_stormfilter_show (int argc, const char **argv UNUSED, struct ngadmin *ng
 	i = ngadmin_getStormFilterValues(nga, ports);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

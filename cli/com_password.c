@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_password_change (int argc, const char **argv, struct ngadmin *nga)
+int do_password_change (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	const struct swi_attr *sa;
@@ -10,24 +10,24 @@ bool do_password_change (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (argc != 1) {
 		printf("usage: password change <value>\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_changePassword(nga, argv[0]);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_password_set (int argc, const char **argv, struct ngadmin *nga)
+int do_password_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	char buf[64];
@@ -36,7 +36,7 @@ bool do_password_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (argc > 1) {
 		printf("usage: password set [<value>]\n");
-		return false;
+		return 1;
 	}
 	
 	if (argc == 0) {
@@ -59,7 +59,7 @@ bool do_password_set (int argc, const char **argv, struct ngadmin *nga)
 	}
 	
 	
-	return true;
+	return 0;
 }
 
 

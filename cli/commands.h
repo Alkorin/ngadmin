@@ -8,7 +8,7 @@
 
 struct TreeNode {
 	const char *name;
-	bool (* const comfunc)(int, const char**, struct ngadmin*);
+	int (*comfunc)(int, const char**, struct ngadmin*);
 	const struct TreeNode *sub;
 };
 

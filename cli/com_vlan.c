@@ -22,7 +22,7 @@ static char vlan_char (int t)
 }
 
 
-bool do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga)
+int do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	unsigned short vlan;
@@ -31,48 +31,47 @@ bool do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (argc != 1) {
 		printf("usage: vlan 8021q del <vlan>\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	vlan=strtoul(argv[0], NULL, 0);
 	if (vlan < 1 || vlan > VLAN_MAX) {
 		printf("vlan out of range\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_VLANDestroy(nga, vlan);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
+int do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	unsigned char *ports = NULL, p, def = VLAN_UNSPEC;
 	const struct swi_attr *sa;
-	bool ret = true;
 	unsigned short vlan;
-	int i, k = 0;
+	int i, k = 0, ret = 0;
 	
 	
 	if (argc == 0) {
 		printf("usage: vlan 802.1q set <vlan> [all unspec|no|untagged|tagged] [<port1> unspec|no|untagged|tagged ...]\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -81,7 +80,7 @@ bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (vlan < 1 || vlan > VLAN_MAX) {
 		printf("vlan out of range\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -98,7 +97,7 @@ bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 			def = VLAN_UNSPEC;
 		} else {
 			printf("incorrect type\n");
-			ret = false;
+			ret = 1;
 			goto end;
 		}
 		k++;
@@ -114,7 +113,7 @@ bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 		p = strtoul(argv[k++], NULL, 0) - 1;
 		if (p >= sa->ports) {
 			printf("port out of range\n");
-			ret = false;
+			ret = 1;
 			goto end;
 		}
 		if (strcasecmp(argv[k], "tagged") ==0) {
@@ -127,7 +126,7 @@ bool do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 			ports[p] = VLAN_UNSPEC;
 		} else {
 			printf("incorrect type\n");
-			ret = false;
+			ret = 1;
 			goto end;
 		}
 		k++;
@@ -144,19 +143,18 @@ end:
 }
 
 
-bool do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga)
+int do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga)
 {
 	unsigned short vl = 0, *vlans = NULL;
 	unsigned char *ports = NULL;
 	const struct swi_attr *sa;
-	int i, j, n = 16;
-	bool ret = true;
+	int i, j, n = 16, ret = 0;
 	
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -178,7 +176,7 @@ bool do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -212,7 +210,7 @@ end:
 }
 
 
-bool do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga)
+int do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int mode, i;
 	
@@ -225,49 +223,49 @@ bool do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga)
 		"3 - basic 802.1Q\n"
 		"4 - advanced 802.1Q\n"
 		);
-		return true;
+		return 0;
 	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	mode = strtoul(argv[0], NULL, 0);
 	if (mode < 1 || mode > 4) {
 		printf("mode out of range\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_setVLANType(nga, mode);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_vlan_mode_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_vlan_mode_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
-	int i, t, ret = true;
+	int i, t, ret = 0;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	if (ngadmin_getCurrentSwitch(nga) == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	i = ngadmin_getVLANType(nga, &t);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -304,7 +302,7 @@ end:
 }
 
 
-bool do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga)
+int do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	const struct swi_attr *sa;
 	unsigned char port;
@@ -314,13 +312,13 @@ bool do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (argc != 2) {
 		printf("usage: vlan pvid set <port> <vlan>\n");
-		return false;
+		return 1;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		return false;
+		return 1;
 	}
 	
 	port = strtoul(argv[0], NULL, 0);
@@ -328,40 +326,39 @@ bool do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	if (port < 1 || port > sa->ports) {
 		printf("port out of range\n");
-		return false;
+		return 1;
 	}
 	
 	if (vlan < 1 || vlan > VLAN_MAX) {
 		printf("vlan out of range\n");
-		return false;
+		return 1;
 	}
 	
 	i = ngadmin_setPVID(nga, port, vlan);
 	printErrCode(i);
 	
 	
-	return true;
+	return 0;
 }
 
 
-bool do_vlan_pvid_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+int do_vlan_pvid_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 {
 	unsigned short *ports = NULL;
 	const struct swi_attr *sa;
-	int i;
-	bool ret = true;
+	int i, ret = 0;
 	
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
 	sa = ngadmin_getCurrentSwitch(nga);
 	if (sa == NULL) {
 		printf("must be logged\n");
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	
@@ -369,7 +366,7 @@ bool do_vlan_pvid_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	i = ngadmin_getAllPVID(nga, ports);
 	if (i != ERR_OK) {
 		printErrCode(i);
-		ret = false;
+		ret = 1;
 		goto end;
 	}
 	

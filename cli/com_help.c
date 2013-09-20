@@ -9,7 +9,7 @@ bool do_help (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
 	
 	if (argc > 0) {
 		printf("this command takes no argument\n");
-		return false;
+		return 1;
 	}
 	
 	printf("Available commands: \n");
@@ -18,7 +18,8 @@ bool do_help (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
 		printf("%s ", s->name);
 	putchar('\n');
 	
-	return true;
+	
+	return 0;
 }
 
 
