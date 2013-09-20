@@ -195,6 +195,7 @@ local attributes = {
 	[0x000D] = {name = "Firmware Version", dissect = "string"}, 
 	[0x0010] = {name = "Firmware Upgrade", dissect = "uint"}, 
 	[0x0013] = {name = "Restart", dissect = "uint"}, 
+	[0x0014] = {name = "Encrypt Passwords", dissect = "uint"}, 
 	[0x0400] = {name = "Defaults", dissect = "uint"}, 
 	[0x0C00] = {name = "Port Status", dissect = dissect_port_status}, 
 	[0x1000] = {name = "Port Statistics", dissect = dissect_port_statistics}, 
