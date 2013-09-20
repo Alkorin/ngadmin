@@ -55,7 +55,7 @@ enum {
 	ERR_INVARG = -6,		/**< invalid argument */
 	ERR_TIMEOUT = -7,		/**< timeout */
 	ERR_MEM = -8,			/**< out of memory */
-	ERR_NOTIMPL = -8		/**< not implemented */
+	ERR_NOTIMPL = -9		/**< not implemented */
 };
 
 
