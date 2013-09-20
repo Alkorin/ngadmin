@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <unistd.h>
 #include <setjmp.h>
 
 #include <getopt.h>
@@ -110,6 +111,7 @@ static struct ngadmin *nga;
 static sigjmp_buf jmpbuf;
 static struct termios orig_term;
 struct termios current_term;
+static bool batch;
 
 
 NORET static void handler (int sig)
@@ -135,33 +137,83 @@ NORET static void handler (int sig)
 }
 
 
+static int pre_login (const struct ether_addr *mac)
+{
+	const struct swi_attr *sa;
+	int n, err;
+	
+	
+	/* scan */
+	printf("scan... ");
+	fflush(stdout);
+	err = ngadmin_scan(nga);
+	printf("done\n");
+	if (err < 0) {
+		printErrCode(err);
+		return err;
+	}
+	
+	/* search switch with requested MAC */
+	sa = ngadmin_getSwitchTab(nga, &n);
+	while (--n >= 0) {
+		if (memcmp(mac, &sa[n].mac, ETH_ALEN) == 0)
+			break;
+	}
+	
+	if (n < 0) {
+		printf("no switch found\n");
+		return 1;
+	}
+	
+	/* login */
+	printf("login... ");
+	fflush(stdout);
+	err = ngadmin_login(nga, n);
+	if (err < 0)
+		printErrCode(err);
+	else
+		printf("done\n");
+	
+	return err;
+}
+
+
 int main (int argc, char **argv)
 {
 	static const struct option opts[] = {
+		{"batch", no_argument, NULL, 'a'},
 		{"keep-broadcasting", no_argument, NULL, 'b'},
 		{"force-interface", no_argument, NULL, 'f'},
 		{"global-broadcast", no_argument, NULL, 'g'},
-		{"interface", required_argument, NULL, 'i'},
 		{"help", no_argument, NULL, 'h'},
+		{"interface", required_argument, NULL, 'i'},
+		{"mac", required_argument, NULL, 'm'},
+		{"password", required_argument, NULL, 'p'},
 		{"timeout", required_argument, NULL, 't'},
 		{0, 0, 0, 0}
 	};
 	char *line, *com[MAXCOM];
-	const char *iface = "eth0";
+	const char *iface = "eth0", *password = NULL;
 	float timeout = 0.f;
 	bool kb = false, force = false, global = false;
 	struct timeval tv;
 	const struct TreeNode *cur, *next;
+	struct ether_addr *mac = NULL;
 	int i, n;
 	
 	
 	tcgetattr(STDIN_FILENO, &orig_term);
 	current_term = orig_term;
+	batch = false;
 	
 	opterr = 0;
 	
-	while ((n = getopt_long(argc, argv, "bfgi:ht:", opts, NULL)) != -1) {
+	while ((n = getopt_long(argc, argv, "abfghi:m:p:t:", opts, NULL)) != -1) {
 		switch (n) {
+		
+		case 'a':
+			batch = true;
+			break;
 		
 		case 'b':
 			kb = true;
@@ -175,20 +227,32 @@ int main (int argc, char **argv)
 			global = true;
 			break;
 		
+		case 'h':
+			printf("usage: %s [-a] [-b] [-f] [-g] [-i <interface>] [-m <MAC>] [-p <password>]\n", argv[0]);
+			goto end;
+		
 		case 'i':
 			iface = optarg;
 			break;
 		
-		case 'h':
-			printf("usage: %s [-b] [-f] [-g] [-i <interface>]\n", argv[0]);
-			goto end;
+		case 'm':
+			mac = ether_aton(optarg);
+			if (mac == NULL) {
+				printf("invalid MAC\n");
+				goto end;
+			}
+			break;
+		
+		case 'p':
+			password = optarg;
+			break;
 		
 		case 't':
 			timeout = strtof(optarg, NULL);
 			break;
 		
 		case '?':
-			printf("Unknown option: \"%s\"\n", argv[optind - 1]);
+			printf("unknown option: \"%s\"\n", argv[optind - 1]);
 			goto end;
 		}
 	}
@@ -197,7 +261,7 @@ int main (int argc, char **argv)
 	argv += optind;
 	
 	if (argc != 0) {
-		printf("Unknown trailing options\n");
+		printf("unknown trailing options\n");
 		goto end;
 	}
 	
@@ -206,7 +270,7 @@ int main (int argc, char **argv)
 	
 	nga = ngadmin_init(iface);
 	if (nga == NULL) {
-		fprintf(stderr, "Initialization error\n");
+		fprintf(stderr, "initialization error\n");
 		goto end;
 	}
 	
@@ -227,18 +291,46 @@ int main (int argc, char **argv)
 	if (global && ngadmin_useGlobalBroadcast(nga, true) != ERR_OK)
 		goto end;
 	
-	rl_attempted_completion_function = my_completion;
-	rl_completion_entry_function = my_generator;
+	/* non-TTY inputs are automatically set to batch mode */
+	if (!isatty(STDIN_FILENO))
+		batch = true;
 	
-	signal(SIGTERM, handler);
-	signal(SIGINT, handler);
+	if (password != NULL)
+		ngadmin_setPassword(nga, password);
 	
-	sigsetjmp(jmpbuf, 1);
+	/* automatic scan & login when switch MAC is specified on the command line */
+	if (mac != NULL && pre_login(mac) != 0)
+		goto end;
+	
+	if (batch) {
+		/* in batch mode, we must be logged to continue */
+		if (ngadmin_getCurrentSwitch(nga) == NULL) {
+			printf("must be logged\n");
+			goto end;
+		}
+	} else {
+		/* initialize readline functions */
+		rl_attempted_completion_function = my_completion;
+		rl_completion_entry_function = my_generator;
+		
+		signal(SIGTERM, handler);
+		signal(SIGINT, handler);
+		
+		sigsetjmp(jmpbuf, 1);
+	}
 	
 	while (main_loop_continue) {
-		line = readline("> ");
-		if (line == NULL)
+		/* read user input */
+		line = NULL;
+		n = 0;
+		if (batch)
+			n = getline(&line, (size_t*)&i, stdin);
+		else
+			line = readline("> ");
+		if (n < 0 || line == NULL)
 			goto end;
+		
+		/* split string into words */
 		trim(line, strlen(line));
 		n = explode(line, com, MAXCOM);
 		
@@ -246,7 +338,8 @@ int main (int argc, char **argv)
 			free(line);
 			continue;
 		} else {
-			add_history(line);
+			if (!batch)
+				add_history(line);
 			free(line);
 		}
 		
