@@ -122,10 +122,11 @@ NORET static void handler (int sig)
 	case SIGINT:
 		printf("interrupt\n");
 		
-		current_term.c_lflag|=ECHO;
+		current_term.c_lflag |= ECHO;
 		tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
 		
-		siglongjmp(jmpbuf, 1);
+		if (!batch)
+			siglongjmp(jmpbuf, 1);
 	
 	default:
 		ngadmin_close(nga);
@@ -137,34 +138,40 @@ NORET static void handler (int sig)
 }
 
 
-static int pre_login (const struct ether_addr *mac)
+static int pre_login (const struct ether_addr *mac, int retries)
 {
 	const struct swi_attr *sa;
-	int n, err;
+	int i, n, err;
 	
 	
-	/* scan */
-	printf("scan... ");
-	fflush(stdout);
-	err = ngadmin_scan(nga);
-	printf("done\n");
-	if (err < 0) {
-		printErrCode(err);
-		return err;
-	}
+	for (i = 1; retries <= 0 || i <= retries; i++) {
+		/* scan */
+		printf("scan... ");
+		fflush(stdout);
+		err = ngadmin_scan(nga);
+		if (err < 0) {
+			printErrCode(err);
+			continue;
+		}
+		
+		/* search switch with requested MAC */
+		sa = ngadmin_getSwitchTab(nga, &n);
+		while (--n >= 0) {
+			if (memcmp(mac, &sa[n].mac, ETH_ALEN) == 0)
+				break;
+		}
 	
-	/* search switch with requested MAC */
-	sa = ngadmin_getSwitchTab(nga, &n);
-	while (--n >= 0) {
-		if (memcmp(mac, &sa[n].mac, ETH_ALEN) == 0)
+		if (n < 0) {
+			printf("no switch found\n");
+		} else {
+			printf("done\n");
 			break;
+		}
 	}
 	
-	if (n < 0) {
-		printf("no switch found\n");
+	if (n < 0)
 		return 1;
-	}
-	
+
 	/* login */
 	printf("login... ");
 	fflush(stdout);
@@ -189,6 +196,7 @@ int main (int argc, char **argv)
 		{"interface", required_argument, NULL, 'i'},
 		{"mac", required_argument, NULL, 'm'},
 		{"password", required_argument, NULL, 'p'},
+		{"retries", required_argument, NULL, 'r'},
 		{"timeout", required_argument, NULL, 't'},
 		{0, 0, 0, 0}
 	};
@@ -199,7 +207,7 @@ int main (int argc, char **argv)
 	struct timeval tv;
 	const struct TreeNode *cur, *next;
 	struct ether_addr *mac = NULL;
-	int i, n;
+	int i, n, retries = 3;
 	
 	
 	tcgetattr(STDIN_FILENO, &orig_term);
@@ -208,7 +216,7 @@ int main (int argc, char **argv)
 	
 	opterr = 0;
 	
-	while ((n = getopt_long(argc, argv, "abfghi:m:p:t:", opts, NULL)) != -1) {
+	while ((n = getopt_long(argc, argv, "abfghi:m:p:r:t:", opts, NULL)) != -1) {
 		switch (n) {
 		
 		case 'a':
@@ -245,6 +253,10 @@ int main (int argc, char **argv)
 		
 		case 'p':
 			password = optarg;
+			break;
+		
+		case 'r':
+			retries = strtol(optarg, NULL, 0);
 			break;
 		
 		case 't':
@@ -298,8 +310,11 @@ int main (int argc, char **argv)
 	if (password != NULL)
 		ngadmin_setPassword(nga, password);
 	
+	signal(SIGTERM, handler);
+	signal(SIGINT, handler);
+	
 	/* automatic scan & login when switch MAC is specified on the command line */
-	if (mac != NULL && pre_login(mac) != 0)
+	if (mac != NULL && pre_login(mac, retries) != 0)
 		goto end;
 	
 	if (batch) {
@@ -312,9 +327,6 @@ int main (int argc, char **argv)
 		/* initialize readline functions */
 		rl_attempted_completion_function = my_completion;
 		rl_completion_entry_function = my_generator;
-		
-		signal(SIGTERM, handler);
-		signal(SIGINT, handler);
 		
 		sigsetjmp(jmpbuf, 1);
 	}
