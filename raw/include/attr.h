@@ -123,7 +123,7 @@ struct attr_cabletest_result {
 } __attribute__((packed));
 
 
-struct attr_vlan_dot {
+struct attr_vlan_conf {
 	unsigned short vlan;
 	unsigned char ports[0];
 };

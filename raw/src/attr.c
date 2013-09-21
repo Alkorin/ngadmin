@@ -112,7 +112,7 @@ static bool pvid_decode (struct attr *at, unsigned char ports)
 	
 	ap->vlan = ntohs(ap->vlan);
 	
-	return (ap->vlan >= VLAN_MIN && ap->vlan <= VLAN_MAX);
+	return (ap->vlan >= VLAN_MIN && ap->vlan <= VLAN_DOT_MAX);
 }
 
 
@@ -123,7 +123,7 @@ static bool pvid_encode (struct attr *at, unsigned char ports)
 	if (ap->port < 1 || ap->port > ports)
 		return false;
 	
-	if (ap->vlan < VLAN_MIN || ap->vlan > VLAN_MAX)
+	if (ap->vlan < VLAN_MIN || ap->vlan > VLAN_DOT_MAX)
 		return false;
 	
 	ap->vlan = htons(ap->vlan);
@@ -136,7 +136,7 @@ static bool vlan_destroy_encode (struct attr *at, unsigned char ports UNUSED)
 {
 	unsigned short v = *(unsigned short*)at->data;
 	
-	if (v < VLAN_MIN || v > VLAN_MAX)
+	if (v < VLAN_MIN || v > VLAN_DOT_MAX)
 		return false;
 	
 	*(unsigned short*)at->data = htons(v);
@@ -230,7 +230,7 @@ static bool igmp_vlan_decode (struct attr *at, unsigned char ports UNUSED)
 		return false;
 	
 	aiv->vlan = ntohs(aiv->vlan);
-	if (aiv->vlan < VLAN_MIN || aiv->vlan > VLAN_MAX)
+	if (aiv->vlan < VLAN_MIN || aiv->vlan > VLAN_DOT_MAX)
 		return false;
 	
 	return true;
@@ -245,7 +245,7 @@ static bool igmp_vlan_encode (struct attr *at, unsigned char ports UNUSED)
 		return false;
 	aiv->enable = htons(aiv->enable);
 	
-	if (aiv->vlan < VLAN_MIN || aiv->vlan > VLAN_MAX)
+	if (aiv->vlan < VLAN_MIN || aiv->vlan > VLAN_DOT_MAX)
 		return false;
 	aiv->vlan = htons(aiv->vlan);
 	
@@ -310,36 +310,118 @@ static bool vlan_type_endecode (struct attr *at, unsigned char ports UNUSED)
 }
 
 
+static bool vlan_port_decode (struct attr *at, unsigned char ports)
+{
+	char *r = at->data;
+	struct attr_vlan_conf *avc;
+	int port;
+	
+	
+	if (at->size != (2 + 1 + ((ports - 1) >> 3)))
+		return false;
+	
+	avc = malloc(sizeof(struct attr_vlan_conf) + ports);
+	if (avc == NULL)
+		return false;
+	
+	avc->vlan = ntohs(*(unsigned short*)r);
+	r += 2;
+	
+	for (port = 0; port < ports; port++) {
+		/* FIXME: if ports > 8 */
+		if ((r[0] >> (7 - port)) & 1)
+			avc->ports[port] = VLAN_UNTAGGED;
+		else
+			avc->ports[port] = VLAN_NO;
+	}
+	
+	free(at->data);
+	at->data = avc;
+	at->size = sizeof(struct attr_vlan_conf) + ports;
+	
+	
+	return true;
+}
+
+
+static bool vlan_port_encode (struct attr *at, unsigned char ports)
+{
+	struct attr_vlan_conf *avc = at->data;
+	char *r;
+	unsigned int size, port;
+	
+	
+	if (avc->vlan < VLAN_MIN || avc->vlan > VLAN_PORT_MAX)
+		return false;
+	
+	/* just a header is valid */
+	if (at->size == sizeof(struct attr_vlan_conf))
+		size = 2;
+	else if (at->size == sizeof(struct attr_vlan_conf) + ports)
+		size = (2 + 1 + ((ports - 1) >> 3));
+	else
+		return false;
+	
+	r = malloc(size);
+	if (r == NULL)
+		return false;
+	
+	memset(r, 0, size);
+	*(unsigned short*)r = htons(avc->vlan);
+	
+	if (size == 2)
+		goto end;
+	
+	r += 2;
+
+	for (port = 0; port < ports; port++) {
+		/* FIXME: if ports > 8 */
+		if (avc->ports[port] == VLAN_UNTAGGED)
+			r[0] |= (1 << (7 - port));
+	}
+
+	r -= 2;
+	
+end:
+	free(at->data);
+	at->data = r;
+	at->size = size;
+	
+	
+	return true;
+}
+
+
 static bool vlan_dot_decode (struct attr *at, unsigned char ports)
 {
 	char *r = at->data;
-	struct attr_vlan_dot *avd;
+	struct attr_vlan_conf *avc;
 	int port;
 	
 	
 	if (at->size != (2 + 2 * (1 + ((ports - 1) >> 3))))
 		return false;
 	
-	avd = malloc(sizeof(struct attr_vlan_dot) + ports);
-	if (avd == NULL)
+	avc = malloc(sizeof(struct attr_vlan_conf) + ports);
+	if (avc == NULL)
 		return false;
 	
-	avd->vlan = ntohs(*(unsigned short*)r);
+	avc->vlan = ntohs(*(unsigned short*)r);
 	r += 2;
 	
 	for (port = 0; port < ports; port++) {
 		/* FIXME: if ports > 8 */
 		if ((r[1] >> (7 - port)) & 1)
-			avd->ports[port] = VLAN_TAGGED;
+			avc->ports[port] = VLAN_TAGGED;
 		else if ((r[0] >> (7 - port)) & 1)
-			avd->ports[port] = VLAN_UNTAGGED;
+			avc->ports[port] = VLAN_UNTAGGED;
 		else
-			avd->ports[port] = VLAN_NO;
+			avc->ports[port] = VLAN_NO;
 	}
 	
 	free(at->data);
-	at->data = avd;
-	at->size = sizeof(struct attr_vlan_dot) + ports;
+	at->data = avc;
+	at->size = sizeof(struct attr_vlan_conf) + ports;
 	
 	
 	return true;
@@ -348,18 +430,18 @@ static bool vlan_dot_decode (struct attr *at, unsigned char ports)
 
 static bool vlan_dot_encode (struct attr *at, unsigned char ports)
 {
-	struct attr_vlan_dot *avd = at->data;
+	struct attr_vlan_conf *avc = at->data;
 	char *r, fl;
 	unsigned int size, port;
 	
 	
-	if (avd->vlan < VLAN_MIN || avd->vlan > VLAN_MAX)
+	if (avc->vlan < VLAN_MIN || avc->vlan > VLAN_DOT_MAX)
 		return false;
 	
 	/* just a header is valid */
-	if (at->size == sizeof(struct attr_vlan_dot))
+	if (at->size == sizeof(struct attr_vlan_conf))
 		size = 2;
-	else if (at->size == sizeof(struct attr_vlan_dot) + ports)
+	else if (at->size == sizeof(struct attr_vlan_conf) + ports)
 		size = (2 + 2 * (1 + ((ports - 1) >> 3)));
 	else
 		return false;
@@ -369,7 +451,7 @@ static bool vlan_dot_encode (struct attr *at, unsigned char ports)
 		return false;
 	
 	memset(r, 0, size);
-	*(unsigned short*)r = htons(avd->vlan);
+	*(unsigned short*)r = htons(avc->vlan);
 	
 	if (size == 2)
 		goto end;
@@ -379,9 +461,11 @@ static bool vlan_dot_encode (struct attr *at, unsigned char ports)
 	for (port = 0; port < ports; port++) {
 		/* FIXME: if ports > 8 */
 		fl = (1 << (7 - port));
-		switch (avd->ports[port]) {
+		switch (avc->ports[port]) {
 		case VLAN_TAGGED:
 			r[1] |= fl;
+			/* a tagged VLAN is also marked as untagged
+			 * so do not put a "break" here */
 		case VLAN_UNTAGGED:
 			r[0] |= fl;
 		}
@@ -416,6 +500,7 @@ static const struct attr_handler attrtab[] = {
 	ATTR_HANDLER_ENTRY(ATTR_CABLETEST_DO, sizeof(struct attr_cabletest_do), cabletest_do_encode, NULL),
 	ATTR_HANDLER_ENTRY(ATTR_CABLETEST_RESULT, 0, cabletest_result_endecode, cabletest_result_endecode),
 	ATTR_HANDLER_ENTRY(ATTR_VLAN_TYPE, 1, vlan_type_endecode, vlan_type_endecode),
+	ATTR_HANDLER_ENTRY(ATTR_VLAN_PORT_CONF, 0, vlan_port_encode, vlan_port_decode),
 	ATTR_HANDLER_ENTRY(ATTR_VLAN_DOT_CONF, 0, vlan_dot_encode, vlan_dot_decode),
 	ATTR_HANDLER_ENTRY(ATTR_VLAN_DESTROY, 2, vlan_destroy_encode, NULL),
 	ATTR_HANDLER_ENTRY(ATTR_VLAN_PVID, sizeof(struct attr_pvid), pvid_encode, pvid_decode),

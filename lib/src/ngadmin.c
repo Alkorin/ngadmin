@@ -1151,13 +1151,128 @@ int ngadmin_setVLANType (struct ngadmin *nga, int t)
 }
 
 
+int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports)
+{
+	List *attr;
+	ListNode *ln;
+	struct attr *at;
+	int ret = ERR_OK;
+	struct attr_vlan_conf *avc;
+	struct swi_attr *sa;
+	int port;
+	
+	
+	if (nga == NULL || ports== NULL)
+		return ERR_INVARG;
+	
+	sa = nga->current;
+	if (sa == NULL)
+		return ERR_NOTLOG;
+	
+	
+	attr = createEmptyList();
+	pushBackList(attr, newEmptyAttr(ATTR_VLAN_PORT_CONF));
+	ret = readRequest(nga, attr);
+	if (ret != ERR_OK)
+		goto end;
+	
+	filterAttributes(attr, ATTR_VLAN_PORT_CONF, ATTR_END);
+	
+	memset(ports, 0, sa->ports);
+	
+	for (ln = attr->first; ln != NULL; ln = ln->next) {
+		at = ln->data;
+		avc = at->data;
+
+		for (port = 0; port < sa->ports; port++) {
+			if (avc->ports[port] == VLAN_UNTAGGED)
+				ports[port] = avc->vlan;
+		}
+	}
+	
+	
+end:
+	destroyList(attr, (void(*)(void*))freeAttr);
+	
+	
+	return ret;
+}
+
+
+int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
+{
+	List *attr = NULL;
+	ListNode *ln;
+	struct attr *at;
+	struct swi_attr *sa;
+	struct attr_vlan_conf *avc;
+	int ret = ERR_OK, port;
+	unsigned char vlan;
+	
+	
+	if (nga == NULL || ports == NULL)
+		return ERR_INVARG;
+	
+	sa = nga->current;
+	if (sa == NULL)
+		return ERR_NOTLOG;
+	
+	/* if nothing is to be changed, do nothing */
+	for (port = 0; port < sa->ports && ports[port] == 0; port++);
+	if (port == sa->ports )
+		goto end;
+	
+	attr = createEmptyList();
+
+	if (memchr(ports, 0, sa->ports) != NULL) {
+		/* if at least one port is unchanged, we need to read old config */
+		pushBackList(attr, newEmptyAttr(ATTR_VLAN_PORT_CONF));
+		ret = readRequest(nga, attr);
+		if (ret != ERR_OK)
+			goto end;
+		
+		filterAttributes(attr, ATTR_VLAN_PORT_CONF, ATTR_END);
+		/* FIXME: check if the returned array effectively contains correct data */
+	} else {
+		/* create an empty VLAN config */
+		for (vlan = VLAN_MIN; vlan <= VLAN_PORT_MAX; vlan++) {
+			avc = malloc(sizeof(struct attr_vlan_conf) + sa->ports);
+			avc->vlan = vlan;
+			memset(avc->ports, 0, sa->ports);
+			pushBackList(attr, newAttr(ATTR_VLAN_PORT_CONF, sizeof(struct attr_vlan_conf) + sa->ports, avc));
+		}
+	}
+	
+	for (ln = attr->first; ln != NULL; ln = ln->next) {
+		at = ln->data;
+		avc = at->data;
+		for (port = 0; port < sa->ports; port++) {
+			if (ports[port] == avc->vlan)
+				avc->ports[port] = VLAN_UNTAGGED;
+			else
+				avc->ports[port] = VLAN_NO;
+		}
+	}
+	
+	ret = writeRequest(nga, attr);
+	attr = NULL;
+	
+	
+end:
+	destroyList(attr, (void(*)(void*))freeAttr);
+	
+	
+	return ret;
+}
+
+
 int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsigned char *ports, int *nb)
 {
 	List *attr;
 	ListNode *ln;
 	struct attr *at;
 	int ret = ERR_OK, total;
-	struct attr_vlan_dot *avd;
+	struct attr_vlan_conf *avc;
 	
 	
 	if (nga == NULL || vlans == NULL || ports== NULL || nb == NULL || *nb <= 0)
@@ -1182,10 +1297,10 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
-		avd = at->data;
+		avc = at->data;
 		
-		*vlans = avd->vlan;
-		memcpy(ports, avd->ports, nga->current->ports);
+		*vlans = avc->vlan;
+		memcpy(ports, avc->ports, nga->current->ports);
 		
 		vlans++;
 		ports += nga->current->ports;
@@ -1210,10 +1325,10 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 	ListNode *ln;
 	struct attr *at;
 	int ret = ERR_OK;
-	struct attr_vlan_dot *avd;
+	struct attr_vlan_conf *avc;
 	
 	
-	if (nga == NULL || vlan < 1 || vlan > VLAN_MAX || ports == NULL)
+	if (nga == NULL || vlan < VLAN_MIN || vlan > VLAN_DOT_MAX || ports == NULL)
 		return ERR_INVARG;
 	else if (nga->current == NULL)
 		return ERR_NOTLOG;
@@ -1231,9 +1346,9 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
-		avd = at->data;
-		if (avd->vlan == vlan) {
-			memcpy(ports, avd->ports, nga->current->ports);
+		avc = at->data;
+		if (avc->vlan == vlan) {
+			memcpy(ports, avc->ports, nga->current->ports);
 			break;
 		}
 	}
@@ -1252,11 +1367,11 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 	List *attr = NULL;
 	struct attr *at;
 	struct swi_attr *sa;
-	struct attr_vlan_dot *avd;
+	struct attr_vlan_conf *avc;
 	int ret = ERR_OK, port;
 	
 	
-	if (nga == NULL || vlan < 1 || vlan > VLAN_MAX || ports == NULL)
+	if (nga == NULL || vlan < VLAN_MIN || vlan > VLAN_DOT_MAX || ports == NULL)
 		return ERR_INVARG;
 	
 	sa = nga->current;
@@ -1271,11 +1386,11 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 	
 	
 	attr = createEmptyList();
-	avd = malloc(sizeof(struct attr_vlan_dot) + sa->ports);
-	if (avd == NULL)
+	avc = malloc(sizeof(struct attr_vlan_conf) + sa->ports);
+	if (avc == NULL)
 		return ERR_MEM;
 	
-	avd->vlan = vlan;
+	avc->vlan = vlan;
 	
 	/* if all is to be changed, we do not need to read old config */
 	if (memchr(ports, VLAN_UNSPEC, sa->ports) != NULL) {
@@ -1289,7 +1404,7 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 		
 		if (attr->first != NULL) {
 			at = attr->first->data;
-			memcpy(avd, at->data, sizeof(struct attr_vlan_dot) + sa->ports);
+			memcpy(avc, at->data, sizeof(struct attr_vlan_conf) + sa->ports);
 		}
 		
 		clearList(attr, (void(*)(void*))freeAttr);
@@ -1299,11 +1414,11 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 	/* apply changes */
 	for (port = 0; port < sa->ports; port++) {
 		if (ports[port] != VLAN_UNSPEC)
-			avd->ports[port] = ports[port];
+			avc->ports[port] = ports[port];
 	}
 	
 	
-	pushBackList(attr, newAttr(ATTR_VLAN_DOT_CONF, sizeof(struct attr_vlan_dot) + sa->ports, avd));
+	pushBackList(attr, newAttr(ATTR_VLAN_DOT_CONF, sizeof(struct attr_vlan_conf) + sa->ports, avc));
 	ret = writeRequest(nga, attr);
 	attr = NULL;
 	
@@ -1321,7 +1436,7 @@ int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan)
 	List *attr;
 	
 	
-	if (nga == NULL || vlan < 1 || vlan > VLAN_MAX)
+	if (nga == NULL || vlan < VLAN_MIN || vlan > VLAN_DOT_MAX)
 		return ERR_INVARG;
 	else if (nga->current == NULL)
 		return ERR_NOTLOG;
@@ -1381,7 +1496,7 @@ int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vla
 	struct attr_pvid *ap;
 	
 	
-	if (nga == NULL || port < 1 || vlan < 1 || vlan > VLAN_MAX)
+	if (nga == NULL || port < 1 || vlan < VLAN_MIN || vlan > VLAN_DOT_MAX)
 		return ERR_INVARG;
 	else if (nga->current == NULL)
 		return ERR_NOTLOG;

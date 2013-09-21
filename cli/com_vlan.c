@@ -41,7 +41,7 @@ int do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga)
 	}
 	
 	vlan=strtoul(argv[0], NULL, 0);
-	if (vlan < 1 || vlan > VLAN_MAX) {
+	if (vlan < VLAN_MIN || vlan > VLAN_DOT_MAX) {
 		printf("vlan out of range\n");
 		return 1;
 	}
@@ -51,6 +51,125 @@ int do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga)
 	
 	
 	return 0;
+}
+
+
+int do_vlan_port_set (int argc, const char **argv, struct ngadmin *nga)
+{
+	unsigned char vlan, port, *ports = NULL;
+	const struct swi_attr *sa;
+	int i, k = 0, ret = 0;
+	
+	
+	if (argc < 2) {
+		printf("usage: vlan port set [all <vlan>] [<port1> <vlan>] [<port2> <vlan>] [...]\n");
+		ret = 1;
+		goto end;
+	}
+	
+	sa = ngadmin_getCurrentSwitch(nga);
+	if (sa == NULL) {
+		printf("must be logged\n");
+		ret = 1;
+		goto end;
+	}
+	
+	ports = malloc(sa->ports * sizeof(unsigned char));
+
+	/* read defaults */
+	port = 0;
+	if (strcmp(argv[k], "all") == 0) {
+		k++;
+		port = strtoul(argv[k++], NULL, 0);
+		if (port < 1 || port > sa->ports) {
+			printf("port out of range");
+			ret = 1;
+			goto end;
+		}
+	}
+	
+	/* apply defaults */
+	memset(ports, port, sa->ports);
+	
+	/* read and apply port specifics */
+	while (k < argc - 1) {
+		/* read port */
+		port = strtoul(argv[k++], NULL, 0);
+		if (port < 1 || port > sa->ports) {
+			printf("port out of range");
+			ret = 1;
+			goto end;
+		}
+		
+		/* read vlan */
+		vlan = strtoul(argv[k++], NULL, 0);
+		if (vlan < VLAN_MIN || vlan > VLAN_PORT_MAX) {
+			printf("vlan out of range\n");
+			ret = 1;
+			goto end;
+		}
+		
+		ports[port - 1] = vlan;
+	}
+	
+	/* set conf */
+	i = ngadmin_setVLANPortConf(nga, ports);
+	printErrCode(i);
+	
+end:
+	free(ports);
+	
+	return ret;
+}
+
+
+int do_vlan_port_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+{
+	unsigned char *ports = NULL;
+	const struct swi_attr *sa;
+	int i, ret = 0;
+	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		ret = 1;
+		goto end;
+	}
+	
+	sa = ngadmin_getCurrentSwitch(nga);
+	if (sa == NULL) {
+		printf("must be logged\n");
+		ret = 1;
+		goto end;
+	}
+	
+	ports = malloc(sa->ports * sizeof(unsigned char));
+	
+	/* request all VLANs config */
+	i = ngadmin_getVLANPortConf(nga, ports);
+	
+	if (i != ERR_OK) {
+		printErrCode(i);
+		ret = 1;
+		goto end;
+	}
+	
+	printf("Ports configuration: \n");
+	printf("Port\t");
+	for (i = 1; i <= sa->ports; i++)
+		printf("%i\t", i);
+	putchar('\n');
+	
+	/* show all VLANs */
+	printf("VLAN\t");
+	for (i = 0; i < sa->ports; i++)
+		printf("%u\t", ports[i]);
+	putchar('\n');
+	
+end:
+	free(ports);
+	
+	return ret;
 }
 
 
@@ -78,7 +197,7 @@ int do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 	/* read vlan */
 	vlan = strtoul(argv[k++], NULL, 0);
 	
-	if (vlan < 1 || vlan > VLAN_MAX) {
+	if (vlan < VLAN_MIN || vlan > VLAN_DOT_MAX) {
 		printf("vlan out of range\n");
 		ret = 1;
 		goto end;
@@ -108,7 +227,7 @@ int do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga)
 	/* apply defaults */
 	memset(ports, def, sa->ports);
 	
-	/* apply port specifics */
+	/* read and apply port specifics */
 	while (k < argc - 1) {
 		p = strtoul(argv[k++], NULL, 0) - 1;
 		if (p >= sa->ports) {
@@ -329,7 +448,7 @@ int do_vlan_pvid_set (int argc, const char **argv, struct ngadmin *nga)
 		return 1;
 	}
 	
-	if (vlan < 1 || vlan > VLAN_MAX) {
+	if (vlan < VLAN_MIN || vlan > VLAN_DOT_MAX) {
 		printf("vlan out of range\n");
 		return 1;
 	}

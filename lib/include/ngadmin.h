@@ -106,10 +106,14 @@ enum {
 #define VLAN_MIN		1
 
 /**
- * Maximum VLAN id. 
+ * Maximum 802.1q VLAN id. 
  **/
-#define VLAN_MAX		4093
+#define VLAN_DOT_MAX		4093
 
+/**
+ * Maximum port VLAN id.
+ **/
+#define VLAN_PORT_MAX		9
 
 
 /**
@@ -683,6 +687,32 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
 int ngadmin_setVLANType (struct ngadmin *nga, int t) EXPORT;
+
+
+/**
+ * Get the ports VLANs in port mode. 
+ * Retrieves the associated VLAN of ports in port mode. 
+ * @note The switch should be in port mode. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param ports A pointer to an array of integers which will receive the 
+                number of associated VLAN. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
+int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports) EXPORT;
+
+
+/**
+ * Set the ports VLAN in port mode. 
+ * Changes the associated VLAN of ports in port mode. 
+ * @note The switch should be in port mode. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param ports A pointer to an array of integers which contain the 
+                number of associated VLAN. Must not be NULL. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
+int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports) EXPORT;
 
 
 /**

@@ -95,6 +95,8 @@ int do_tree (int argc, const char **argv, struct ngadmin *nga);
 
 /* vlan */
 int do_vlan_8021q_del (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_port_set (int argc, const char **argv, struct ngadmin *nga);
+int do_vlan_port_show (int argc, const char **argv, struct ngadmin *nga);
 int do_vlan_8021q_set (int argc, const char **argv, struct ngadmin *nga);
 int do_vlan_8021q_show (int argc, const char **argv, struct ngadmin *nga);
 int do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga);
@@ -191,8 +193,8 @@ COM_ROOT_START(commands)
 			COM_TERM(show, do_vlan_mode_show)
 		COM_END
 		COM_START(port)
-			COM_TERM(set, NULL)
-			COM_TERM(show, NULL)
+			COM_TERM(set, do_vlan_port_set)
+			COM_TERM(show, do_vlan_port_show)
 		COM_END
 		COM_START(pvid)
 			COM_TERM(set, do_vlan_pvid_set)
