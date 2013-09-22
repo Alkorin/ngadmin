@@ -356,11 +356,19 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 		
 		filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 		
-		if (attr->first != NULL) {
+		/* check if the switch is in 802.1Q mode */
+		if (attr->first == NULL) {
+			ret = ERR_INVARG;
+			goto end;
+		} else {
 			at = attr->first->data;
-			memcpy(avc, at->data, sizeof(struct attr_vlan_conf) + sa->ports);
+			if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+				ret = ERR_INVARG;
+				goto end;
+			}
 		}
 		
+		memcpy(avc, at->data, sizeof(struct attr_vlan_conf) + sa->ports);
 		clearList(attr, (void(*)(void*))freeAttr);
 	}
 	
