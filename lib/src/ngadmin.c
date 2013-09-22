@@ -1184,6 +1184,9 @@ int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports)
 		at = ln->data;
 		avc = at->data;
 
+		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports)
+			return ERR_INVARG;
+		
 		for (port = 0; port < sa->ports; port++) {
 			if (avc->ports[port] == VLAN_UNTAGGED)
 				ports[port] = avc->vlan;
@@ -1273,11 +1276,14 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 	struct attr *at;
 	int ret = ERR_OK, total;
 	struct attr_vlan_conf *avc;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || vlans == NULL || ports== NULL || nb == NULL || *nb <= 0)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
+	
+	sa = nga->current;
+	if (sa == NULL)
 		return ERR_NOTLOG;
 	
 	
@@ -1293,17 +1299,20 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
 	memset(vlans, 0, total * sizeof(unsigned short));
-	memset(ports, 0, total * nga->current->ports);
+	memset(ports, 0, total * sa->ports);
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		avc = at->data;
 		
+		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports)
+			return ERR_INVARG;
+		
 		*vlans = avc->vlan;
-		memcpy(ports, avc->ports, nga->current->ports);
+		memcpy(ports, avc->ports, sa->ports);
 		
 		vlans++;
-		ports += nga->current->ports;
+		ports += sa->ports;
 		(*nb)++;
 		
 		if (*nb > total)
