@@ -77,33 +77,35 @@ int do_vlan_port_set (int argc, const char **argv, struct ngadmin *nga)
 	ports = malloc(sa->ports * sizeof(unsigned char));
 
 	/* read defaults */
-	port = 0;
+	vlan = 0;
 	if (strcmp(argv[k], "all") == 0) {
 		k++;
-		port = strtoul(argv[k++], NULL, 0);
-		if (port < 1 || port > sa->ports) {
-			printf("port out of range");
+		vlan = strtoul(argv[k++], NULL, 0);
+		/* VLAN 0 is allowed and means no change */
+		if (vlan > VLAN_PORT_MAX) {
+			printf("vlan out of range\n");
 			ret = 1;
 			goto end;
 		}
 	}
 	
 	/* apply defaults */
-	memset(ports, port, sa->ports);
+	memset(ports, vlan, sa->ports);
 	
 	/* read and apply port specifics */
 	while (k < argc - 1) {
 		/* read port */
 		port = strtoul(argv[k++], NULL, 0);
 		if (port < 1 || port > sa->ports) {
-			printf("port out of range");
+			printf("port out of range\n");
 			ret = 1;
 			goto end;
 		}
 		
 		/* read vlan */
 		vlan = strtoul(argv[k++], NULL, 0);
-		if (vlan < VLAN_MIN || vlan > VLAN_PORT_MAX) {
+		/* VLAN 0 is allowed and means no change */
+		if (vlan > VLAN_PORT_MAX) {
 			printf("vlan out of range\n");
 			ret = 1;
 			goto end;
