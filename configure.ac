@@ -27,6 +27,13 @@ AC_ARG_ENABLE(doc,
 	[AS_HELP_STRING([--enable-doc], [enable documentation generation [default=no]])],
 	[enable_doc=yes], [enable_doc=no])
 
+# enable/disable build of NgSpy
+AC_ARG_ENABLE(spy,
+	[AS_HELP_STRING([--enable-spy], [enable NgSpy [default=no]])],
+	[enable_spy=yes], [enable_spy=no])
+AM_CONDITIONAL(ENABLE_SPY, test x$enable_spy = xyes)
+
+
 
 if test "x${enable_doc}" = xyes; then
 	AC_CHECK_PROGS([DOXYGEN], [doxygen])
@@ -92,6 +99,15 @@ AC_CONFIG_FILES([
 	cli/src/Makefile
 ])
 
+AM_COND_IF([ENABLE_SPY], [
+	AC_CONFIG_FILES([
+			spy/Makefile
+			spy/man/Makefile
+			spy/src/Makefile
+		])
+])
+
+
 AC_OUTPUT
 
 
@@ -101,6 +117,7 @@ Prefix.............: ${prefix}
 Debug..............: ${enable_debug}
 Compiler...........: ${CC} ${CFLAGS} ${CPPFLAGS}
 Readline suppport..: ${with_readline}
+Spy................: ${enable_spy}
 "
 
 
