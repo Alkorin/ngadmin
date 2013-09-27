@@ -123,7 +123,6 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
 	struct swi_attr *sa;
 	struct attr_vlan_conf *avc_old, *avc_new;
 	int ret = ERR_OK, port;
-	bool change;
 	
 	
 	if (nga == NULL || ports == NULL)
@@ -147,42 +146,26 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
 	
 	filterAttributes(conf_old, ATTR_VLAN_PORT_CONF, ATTR_END);
 	
-	/* check if the switch is in port mode */
 	if (conf_old->first == NULL) {
 		ret = ERR_INVARG;
 		goto end;
-	} else {
-		at = conf_old->first->data;
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
-			ret = ERR_INVARG;
-			goto end;
-		}
 	}
 	
 	/* merge old config with requested config */
 	conf_new = createEmptyList();
+	avc_new = malloc(sizeof(struct attr_vlan_conf) + sa->ports);
 	
 	for (ln = conf_old->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		avc_old = at->data;
 		
-		/* check if there is a change on this VLAN */
-		change = false;
-		for (port = 0; !change && port < sa->ports; port++) {
-			if (ports[port] == 0)
-				continue;
-			if (ports[port] == avc_old->vlan && avc_old->ports[port] == VLAN_NO)
-				change = true;
-			if (ports[port] != avc_old->vlan && avc_old->ports[port] == VLAN_UNTAGGED)
-				change = true;
+		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+			ret = ERR_INVARG;
+			free(avc_new);
+			goto end;
 		}
 		
-		/* if the VLAN is not changed, no need to send it to the switch */
-		if (!change)
-			continue;
-		
 		/* compute new VLAN configuration */
-		avc_new = malloc(sizeof(struct attr_vlan_conf) + sa->ports);
 		avc_new->vlan = avc_old->vlan;
 		
 		for (port = 0; port < sa->ports; port++) {
@@ -194,8 +177,14 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
 				avc_new->ports[port] = VLAN_NO;
 		}
 		
-		pushBackList(conf_new, newAttr(ATTR_VLAN_PORT_CONF, sizeof(struct attr_vlan_conf) + sa->ports, avc_new));
+		/* only add it if it is different from old config */
+		if (memcmp(avc_old->ports, avc_new->ports, sa->ports) != 0) {
+			pushBackList(conf_new, newAttr(ATTR_VLAN_PORT_CONF, sizeof(struct attr_vlan_conf) + sa->ports, avc_new));
+			avc_new = malloc(sizeof(struct attr_vlan_conf) + sa->ports);
+		}
 	}
+	
+	free(avc_new);
 	
 	/* if no VLAN is changed, no need to send anything to the switch */
 	if (conf_new->first == NULL)
