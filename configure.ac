@@ -7,7 +7,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE
 
-# Checks for programs
+# check for programs
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
@@ -40,9 +40,7 @@ fi
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
 
-CFLAGS="-Wall -Wextra -Os"
-
-# Checks for libraries
+# check for libraries
 if test "x${with_readline}" != xno; then
 	AC_CHECK_LIB([readline], [readline], [], [
 		if test "x${with_readline}" = xyes; then
@@ -53,6 +51,20 @@ Unable to find readline library
 		fi
 	])
 fi
+
+AC_ARG_ENABLE(debug,
+	[AS_HELP_STRING([--enable-debug], [enable debug mode [default=no]])],
+	[enable_debug=yes], [enable_debug=no])
+
+CFLAGS="-Wall -Wextra -Os"
+
+if test "x${enable_debug}" = xyes; then
+	CFLAGS="$CFLAGS -g"
+else
+	CFLAGS="$CFLAGS -fomit-frame-pointer"
+	LDFLAGS="$LDFLAGS -s"
+fi
+
 
 # check for header files
 AC_CHECK_HEADERS([arpa/inet.h stdlib.h string.h sys/ioctl.h termios.h unistd.h])
@@ -86,8 +98,9 @@ AC_OUTPUT
 echo "
 ${PACKAGE_NAME} version ${PACKAGE_VERSION}
 Prefix.............: ${prefix}
-Debug..............: 
+Debug..............: ${enable_debug}
 Compiler...........: ${CC} ${CFLAGS} ${CPPFLAGS}
+Readline suppport..: ${with_readline}
 "
 
 

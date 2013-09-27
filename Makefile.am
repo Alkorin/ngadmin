@@ -7,11 +7,3 @@ SUBDIRS = raw lib cli
 #SUBDIRS += dump
 #endif
 
-
-#if ENABLE_DEBUG
-#CFLAGS += -g
-#else
-#CFLAGS += -fomit-frame-pointer
-#LDFLAGS+= -s
-#endif
-
