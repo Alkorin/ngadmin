@@ -91,14 +91,21 @@ int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports)
 	
 	filterAttributes(attr, ATTR_VLAN_PORT_CONF, ATTR_END);
 	
+	if (attr->first == NULL) {
+		ret = ERR_INVARG;
+		goto end;
+	}
+	
 	memset(ports, 0, sa->ports);
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		avc = at->data;
 
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports)
-			return ERR_INVARG;
+		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+			ret = ERR_INVARG;
+			goto end;
+		}
 		
 		for (port = 0; port < sa->ports; port++) {
 			if (avc->ports[port] == VLAN_UNTAGGED)
@@ -232,6 +239,11 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 	
 	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
+	if (attr->first == NULL) {
+		ret = ERR_INVARG;
+		goto end;
+	}
+	
 	memset(vlans, 0, total * sizeof(unsigned short));
 	memset(ports, 0, total * sa->ports);
 	
@@ -239,8 +251,10 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 		at = ln->data;
 		avc = at->data;
 		
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports)
-			return ERR_INVARG;
+		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+			ret = ERR_INVARG;
+			goto end;
+		}
 		
 		*vlans = avc->vlan;
 		memcpy(ports, avc->ports, sa->ports);
@@ -268,14 +282,16 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 	ListNode *ln;
 	struct attr *at;
 	int ret = ERR_OK;
+	struct swi_attr *sa;
 	struct attr_vlan_conf *avc;
 	
 	
 	if (nga == NULL || vlan < VLAN_MIN || vlan > VLAN_DOT_MAX || ports == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
-		return ERR_NOTLOG;
 	
+	sa = nga->current;
+	if (sa == NULL)
+		return ERR_NOTLOG;
 	
 	attr = createEmptyList();
 	pushBackList(attr, newShortAttr(ATTR_VLAN_DOT_CONF, vlan));
@@ -285,13 +301,24 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 	
 	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
-	memset(ports, 0, nga->current->ports);
+	if (attr->first == NULL) {
+		ret = ERR_INVARG;
+		goto end;
+	}
+	
+	memset(ports, 0, sa->ports);
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		avc = at->data;
+		
+		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+			ret = ERR_INVARG;
+			goto end;
+		}
+		
 		if (avc->vlan == vlan) {
-			memcpy(ports, avc->ports, nga->current->ports);
+			memcpy(ports, avc->ports, sa->ports);
 			break;
 		}
 	}
