@@ -14,6 +14,8 @@ LT_INIT
 AC_PROG_CC
 AM_PROG_CC_C_O
 
+CFLAGS="-Wall -Wextra -Os"
+
 # Checks for libraries
 AC_CHECK_LIB([readline], [readline])
 
