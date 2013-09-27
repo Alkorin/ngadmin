@@ -17,9 +17,28 @@ LT_PREREQ([2.4])
 LT_INIT
 
 
+# enable/disable readline
 AC_ARG_WITH([readline],
 	[AS_HELP_STRING([--with-readline], [support fancy command line editing @<:@default=check@:>@])],
 	[with_readline="$withval"], [with_readline=check])
+
+# enable/disable documentation generation
+AC_ARG_ENABLE(doc,
+	[AS_HELP_STRING([--enable-doc], [enable documentation generation [default=no]])],
+	[enable_doc=yes], [enable_doc=no])
+
+
+if test "x${enable_doc}" = xyes; then
+	AC_CHECK_PROGS([DOXYGEN], [doxygen])
+	if test -z "$DOXYGEN"; then
+		AC_MSG_ERROR([
+----------------------------------------
+Doxygen not found
+----------------------------------------])
+	fi
+fi
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+
 
 CFLAGS="-Wall -Wextra -Os"
 
@@ -35,15 +54,15 @@ Unable to find readline library
 	])
 fi
 
-# Checks for header files
+# check for header files
 AC_CHECK_HEADERS([arpa/inet.h stdlib.h string.h sys/ioctl.h termios.h unistd.h])
 AC_HEADER_STDBOOL
 
-# Checks for typedefs, structures, and compiler characteristics
+# check for typedefs, structures, and compiler characteristics
 AC_C_INLINE
 AC_TYPE_SIZE_T
 
-# Checks for library functions
+# check for library functions
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([inet_ntoa memchr memset select socket strcasecmp strdup strtol strtoul])
 
