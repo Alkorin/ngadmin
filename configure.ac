@@ -33,6 +33,12 @@ AC_ARG_ENABLE(spy,
 	[enable_spy=yes], [enable_spy=no])
 AM_CONDITIONAL(ENABLE_SPY, test x$enable_spy = xyes)
 
+# enable/disable build of NgEmu
+AC_ARG_ENABLE(emu,
+	[AS_HELP_STRING([--enable-emu], [enable NgEmu [default=no]])],
+	[enable_emu=yes], [enable_emu=no])
+AM_CONDITIONAL(ENABLE_EMU, test x$enable_emu = xyes)
+
 
 
 if test "x${enable_doc}" = xyes; then
@@ -107,6 +113,14 @@ AM_COND_IF([ENABLE_SPY], [
 		])
 ])
 
+AM_COND_IF([ENABLE_EMU], [
+	AC_CONFIG_FILES([
+			emu/Makefile
+			emu/man/Makefile
+			emu/src/Makefile
+		])
+])
+
 
 AC_OUTPUT
 
@@ -118,6 +132,7 @@ Debug..............: ${enable_debug}
 Compiler...........: ${CC} ${CFLAGS} ${CPPFLAGS}
 Readline suppport..: ${with_readline}
 Spy................: ${enable_spy}
+Emulator...........: ${enable_emu}
 "
 
 

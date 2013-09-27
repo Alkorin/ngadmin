@@ -7,3 +7,7 @@ if ENABLE_SPY
 SUBDIRS += spy
 endif
 
+if ENABLE_EMU
+SUBDIRS += emu
+endif
+
