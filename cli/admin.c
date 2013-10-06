@@ -151,7 +151,7 @@ static int pre_login (const struct ether_addr *mac, int retries)
 		err = ngadmin_scan(nga);
 		if (err < 0) {
 			printErrCode(err);
-			continue;
+			return err;
 		}
 		
 		/* search switch with requested MAC */
