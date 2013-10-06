@@ -30,16 +30,7 @@ int startNetwork (struct ngadmin *nga)
 	
 	memset(&ifr, 0, sizeof(struct ifreq));
 	strncpy(ifr.ifr_name, nga->iface, IFNAMSIZ - 1);
-	
-	/* get the interface broadcast address */
-	ret = ioctl(nga->sock, SIOCGIFBRDADDR, &ifr);
-	if (ret < 0) {
-		perror("ioctl(SIOCGIFBRDADDR)");
-		close(nga->sock);
-		return ret;
-	}
-	nga->brd = (*(struct sockaddr_in*)&ifr.ifr_addr).sin_addr;
-	
+
 	/* get the interface MAC address */
 	ret = ioctl(nga->sock, SIOCGIFHWADDR, &ifr);
 	if (ret < 0) {
@@ -77,6 +68,36 @@ int startNetwork (struct ngadmin *nga)
 		return ret;
 	}
 	
+	
+	return 0;
+}
+
+
+int setBroadcastType (struct ngadmin *nga, bool value)
+{
+	int ret;
+	struct ifreq ifr;
+	
+	
+	nga->globalbroad = value;
+	if (value) {
+		nga->brd.s_addr = (in_addr_t)0;
+		return 0;
+	}
+	
+	memset(&ifr, 0, sizeof(struct ifreq));
+	strncpy(ifr.ifr_name, nga->iface, IFNAMSIZ - 1);
+	
+	/* get the interface broadcast address */
+	ret = ioctl(nga->sock, SIOCGIFBRDADDR, &ifr);
+	if (ret < 0) {
+		perror("ioctl(SIOCGIFBRDADDR)");
+		nga->brd.s_addr = (in_addr_t)0;
+		nga->globalbroad = true;
+		return ret;
+	}
+	
+	nga->brd = (*(struct sockaddr_in*)&ifr.ifr_addr).sin_addr;
 	
 	return 0;
 }

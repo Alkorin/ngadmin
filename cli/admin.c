@@ -191,9 +191,9 @@ int main (int argc, char **argv)
 		{"batch", no_argument, NULL, 'a'},
 		{"keep-broadcasting", no_argument, NULL, 'b'},
 		{"force-interface", no_argument, NULL, 'f'},
-		{"global-broadcast", no_argument, NULL, 'g'},
 		{"help", no_argument, NULL, 'h'},
 		{"interface", required_argument, NULL, 'i'},
+		{"local-broadcast", no_argument, NULL, 'l'},
 		{"mac", required_argument, NULL, 'm'},
 		{"password", required_argument, NULL, 'p'},
 		{"retries", required_argument, NULL, 'r'},
@@ -203,7 +203,7 @@ int main (int argc, char **argv)
 	char *line, *com[MAXCOM];
 	const char *iface = "eth0", *password = NULL;
 	float timeout = 0.f;
-	bool kb = false, force = false, global = false;
+	bool kb = false, force = false, global = true;
 	struct timeval tv;
 	const struct TreeNode *cur, *next;
 	struct ether_addr *mac = NULL;
@@ -216,7 +216,7 @@ int main (int argc, char **argv)
 	
 	opterr = 0;
 	
-	while ((n = getopt_long(argc, argv, "abfghi:m:p:r:t:", opts, NULL)) != -1) {
+	while ((n = getopt_long(argc, argv, "abfhi:lm:p:r:t:", opts, NULL)) != -1) {
 		switch (n) {
 		
 		case 'a':
@@ -231,16 +231,16 @@ int main (int argc, char **argv)
 			force = true;
 			break;
 		
-		case 'g':
-			global = true;
-			break;
-		
 		case 'h':
 			printf("usage: %s [-a] [-b] [-f] [-g] [-i <interface>] [-m <MAC>] [-p <password>]\n", argv[0]);
 			goto end;
 		
 		case 'i':
 			iface = optarg;
+			break;
+		
+		case 'l':
+			global = false;
 			break;
 		
 		case 'm':
@@ -294,13 +294,13 @@ int main (int argc, char **argv)
 	}
 	
 	
-	if (kb && ngadmin_setKeepBroadcasting(nga, true) != ERR_OK)
+	if (ngadmin_setKeepBroadcasting(nga, kb) != ERR_OK)
 		goto end;
 	
 	if (force && ngadmin_forceInterface(nga) != ERR_OK)
 		goto end;
 	
-	if (global && ngadmin_useGlobalBroadcast(nga, true) != ERR_OK)
+	if (ngadmin_useGlobalBroadcast(nga, global) != ERR_OK)
 		goto end;
 	
 	/* non-TTY inputs are automatically set to batch mode */

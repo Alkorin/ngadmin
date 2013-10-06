@@ -19,6 +19,7 @@ struct ngadmin* ngadmin_init (const char *iface)
 	/* allocate main structure */
 	nga = malloc(sizeof(struct ngadmin));
 	memset(nga, 0, sizeof(struct ngadmin));
+	nga->globalbroad = true;
 	
 	strncpy(nga->iface, iface, IFNAMSIZ - 1);
 	
@@ -76,9 +77,10 @@ int ngadmin_useGlobalBroadcast (struct ngadmin *nga, bool value)
 	if (nga == NULL)
 		return ERR_INVARG;
 	
-	nga->globalbroad = value;
-	
-	return ERR_OK;
+	if (setBroadcastType(nga, value) == 0)
+		return ERR_OK;
+	else
+		return ERR_NET;
 }
 
 

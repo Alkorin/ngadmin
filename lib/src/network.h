@@ -10,6 +10,9 @@
 int startNetwork (struct ngadmin *nga);
 
 
+int setBroadcastType (struct ngadmin *nga, bool value);
+
+
 int stopNetwork (struct ngadmin *nga);
 
 
