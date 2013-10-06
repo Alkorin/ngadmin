@@ -15,8 +15,6 @@
 #define MAXCOM	32
 
 
-int main_loop_continue = 1;
-
 
 static const struct TreeNode* getSubCom (char **com, int n, int *t)
 {
@@ -107,6 +105,7 @@ static char** my_completion (const char *text, int start, int end UNUSED)
 }
 
 
+int main_loop_continue;
 static struct ngadmin *nga;
 static sigjmp_buf jmpbuf;
 static struct termios orig_term;
@@ -125,7 +124,7 @@ NORET static void handler (int sig)
 		current_term.c_lflag |= ECHO;
 		tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
 		
-		if (!batch)
+		if (!batch && main_loop_continue)
 			siglongjmp(jmpbuf, 1);
 	
 	default:
@@ -331,6 +330,7 @@ int main (int argc, char **argv)
 		sigsetjmp(jmpbuf, 1);
 	}
 	
+	main_loop_continue = 1;
 	while (main_loop_continue) {
 		/* read user input */
 		line = NULL;
