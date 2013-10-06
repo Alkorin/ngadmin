@@ -31,11 +31,12 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t)
 	
 	*t = VLAN_DISABLED;
 	
-	if (attr->first != NULL) {
-		at = attr->first->data;
-		*t =(int)*(char*)at->data;
+	if (attr->first == NULL) {
+		ret = ERR_INVARG;
+		goto end;
 	}
-	
+	at = attr->first->data;
+	*t =(int)*(char*)at->data;
 	
 end:
 	destroyList(attr, (void(*)(void*))freeAttr);
@@ -50,7 +51,7 @@ int ngadmin_setVLANType (struct ngadmin *nga, int t)
 	List *attr;
 	
 	
-	if (nga == NULL || t < 1 || t > 4)
+	if (nga == NULL || t < VLAN_DISABLED || t > VLAN_DOT_ADV)
 		return ERR_INVARG;
 	else if (nga->current == NULL)
 		return ERR_NOTLOG;

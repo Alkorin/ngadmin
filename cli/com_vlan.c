@@ -339,6 +339,7 @@ int do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga)
 	if (argc == 0) {
 		printf(
 		"usage: vlan mode set <mode>\n"
+		"0 - disabled\n"
 		"1 - basic port based\n"
 		"2 - advanced port based\n"
 		"3 - basic 802.1Q\n"
@@ -353,7 +354,7 @@ int do_vlan_mode_set (int argc, const char **argv, struct ngadmin *nga)
 	}
 	
 	mode = strtoul(argv[0], NULL, 0);
-	if (mode < 1 || mode > 4) {
+	if (mode < VLAN_DISABLED || mode > VLAN_DOT_ADV) {
 		printf("mode out of range\n");
 		return 1;
 	}

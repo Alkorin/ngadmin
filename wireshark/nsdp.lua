@@ -61,6 +61,7 @@ local bitrates_codes = {
 
 
 local vlan_type_codes = {
+	[0] = "disabled",
 	[1] = "port basic",
 	[2] = "port advanced",
 	[3] = "802.1Q basic",
