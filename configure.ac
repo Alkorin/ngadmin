@@ -20,7 +20,12 @@ LT_INIT
 # enable/disable readline
 AC_ARG_WITH([readline],
 	[AS_HELP_STRING([--with-readline], [support fancy command line editing @<:@default=check@:>@])],
-	[with_readline="$withval"], [with_readline=check])
+	[with_readline="$withval"], [with_readline=yes])
+
+# enable debug build
+AC_ARG_ENABLE(debug,
+	[AS_HELP_STRING([--enable-debug], [enable debug mode [default=no]])],
+	[enable_debug=yes], [enable_debug=no])
 
 # enable/disable documentation generation
 AC_ARG_ENABLE(doc,
@@ -41,33 +46,25 @@ AM_CONDITIONAL(ENABLE_EMU, test x$enable_emu = xyes)
 
 
 
-if test "x${enable_doc}" = xyes; then
+AS_IF([test "x${enable_doc}" = "xyes"], [
 	AC_CHECK_PROGS([DOXYGEN], [doxygen])
-	if test -z "$DOXYGEN"; then
-		AC_MSG_ERROR([
-----------------------------------------
-Doxygen not found
-----------------------------------------])
-	fi
-fi
+	AS_IF([test -z "$DOXYGEN"], [
+		AC_MSG_ERROR([Doxygen not found])
+	])
+])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
 
-# check for libraries
-if test "x${with_readline}" != xno; then
-	AC_CHECK_LIB([readline], [readline], [], [
-		if test "x${with_readline}" = xyes; then
-			AC_MSG_ERROR([
-----------------------------------------
-Unable to find readline library
-----------------------------------------])
-		fi
+AS_IF([test "x${with_readline}" != "xno"], [
+	AC_CHECK_LIB([readline], [readline], [
+		AC_SUBST([READLINE_LIBS], [-lreadline])
+		AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
+	], [
+		AC_MSG_FAILURE([readline test failed (--without-readline to disable)])
 	])
-fi
+])
 
-AC_ARG_ENABLE(debug,
-	[AS_HELP_STRING([--enable-debug], [enable debug mode [default=no]])],
-	[enable_debug=yes], [enable_debug=no])
+
 
 CFLAGS="-Wall -Wextra -Os"
 
@@ -129,6 +126,7 @@ echo "
 ${PACKAGE_NAME} version ${PACKAGE_VERSION}
 Prefix.............: ${prefix}
 Debug..............: ${enable_debug}
+Doc................: ${enable_doc}
 Compiler...........: ${CC} ${CFLAGS} ${CPPFLAGS}
 Readline suppport..: ${with_readline}
 Spy................: ${enable_spy}
