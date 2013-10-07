@@ -1,0 +1,13 @@
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libngadmin
+Description: Library to manage Netgear switches using NSDP protocol
+Version: @VERSION@
+Requires: 
+Libs: -L${libdir} -lngadmin
+Cflags: -I${includedir}
+

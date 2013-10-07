@@ -1,4 +1,7 @@
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libngadmin.pc
+
 lib_LTLIBRARIES = libngadmin.la
 
 libngadmin_la_SOURCES = network.c bitrate.c firmware.c libconf.c mirror.c misc.c \

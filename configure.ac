@@ -97,6 +97,7 @@ AC_CONFIG_FILES([
 	lib/Makefile
 	lib/include/Makefile
 	lib/src/Makefile
+	lib/src/libngadmin.pc
 	cli/Makefile
 	cli/man/Makefile
 	cli/src/Makefile
