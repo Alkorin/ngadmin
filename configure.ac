@@ -113,28 +113,13 @@ AC_CONFIG_FILES([
 	cli/Makefile
 	cli/man/Makefile
 	cli/src/Makefile
-])
-
-AM_COND_IF([ENABLE_SPY], [
-	AC_CONFIG_FILES([
-		spy/Makefile
-		spy/man/Makefile
-		spy/src/Makefile
-	])
-])
-
-AM_COND_IF([ENABLE_EMU], [
-	AC_CONFIG_FILES([
-		emu/Makefile
-		emu/man/Makefile
-		emu/src/Makefile
-	])
-])
-
-AM_COND_IF([HAVE_DOXYGEN], [
-	AC_CONFIG_FILES([
-		lib/doxyfile
-	])
+	spy/Makefile
+	spy/man/Makefile
+	spy/src/Makefile
+	emu/Makefile
+	emu/man/Makefile
+	emu/src/Makefile
+	lib/doxyfile
 ])
 
 AC_OUTPUT
@@ -146,7 +131,7 @@ Prefix.............: ${prefix}
 Debug..............: ${enable_debug}
 Doc................: ${enable_doc}
 Compiler...........: ${CC} ${CFLAGS} ${CPPFLAGS}
-Readline suppport..: ${with_readline}
+Readline support...: ${with_readline}
 Spy................: ${enable_spy}
 Emulator...........: ${enable_emu}
 "
