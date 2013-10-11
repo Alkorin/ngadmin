@@ -7,8 +7,8 @@ if HAVE_DOXYGEN
 all-local: doc
 
 
-doc:
-	$(DOXYGEN) ngadmin
+doc: doxyfile
+	$(DOXYGEN) $<
 
 
 clean-local:

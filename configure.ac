@@ -105,20 +105,25 @@ AC_CONFIG_FILES([
 
 AM_COND_IF([ENABLE_SPY], [
 	AC_CONFIG_FILES([
-			spy/Makefile
-			spy/man/Makefile
-			spy/src/Makefile
-		])
+		spy/Makefile
+		spy/man/Makefile
+		spy/src/Makefile
+	])
 ])
 
 AM_COND_IF([ENABLE_EMU], [
 	AC_CONFIG_FILES([
-			emu/Makefile
-			emu/man/Makefile
-			emu/src/Makefile
-		])
+		emu/Makefile
+		emu/man/Makefile
+		emu/src/Makefile
+	])
 ])
 
+AM_COND_IF([HAVE_DOXYGEN], [
+	AC_CONFIG_FILES([
+		lib/doxyfile
+	])
+])
 
 AC_OUTPUT
 

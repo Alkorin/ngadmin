@@ -8,6 +8,7 @@
 *.pc
 ngcli
 ngspy
+doxyfile
 lib/doc/
 raw/doc/
 *.m4
