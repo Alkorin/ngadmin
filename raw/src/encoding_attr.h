@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include <attr.h>
+#include <nsdp/attr.h>
 
 
 

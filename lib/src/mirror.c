@@ -1,8 +1,8 @@
 
 #include <ngadmin.h>
 
-#include <attr.h>
-#include <protocol.h>
+#include <nsdp/attr.h>
+#include <nsdp/protocol.h>
 
 #include "lib.h"
 #include "network.h"

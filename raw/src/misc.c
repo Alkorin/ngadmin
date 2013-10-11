@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 
-#include <misc.h>
+#include <nsdp/misc.h>
 
 
 static const char passwordKey[] = "NtgrSmartSwitchRock";

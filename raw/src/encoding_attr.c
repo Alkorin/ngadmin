@@ -1,6 +1,6 @@
 
 #include <ngadmin.h> /* FIXME */
-#include <protocol.h>
+#include <nsdp/protocol.h>
 #include "encoding_attr.h"
 
 

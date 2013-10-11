@@ -5,6 +5,7 @@
 *.so
 *.a
 *.la
+*.orig
 *.pc
 ngcli
 ngspy

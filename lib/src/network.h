@@ -3,7 +3,8 @@
 #define DEF_NETWORK
 
 
-#include "list.h"
+#include <nsdp/list.h>
+#include <nsdp/net.h>
 #include "lib.h"
 
 
@@ -22,10 +23,10 @@ int forceInterface (struct ngadmin *nga);
 int updateTimeout (struct ngadmin *nga);
 
 
-int sendNsdpPacket (struct ngadmin *nga, char code, const List *attr);
+void prepareSend (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code);
 
 
-int recvNsdpPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr);
+void prepareRecv (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code);
 
 
 int readRequest (struct ngadmin *nga, List *attr);

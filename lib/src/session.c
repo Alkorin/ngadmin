@@ -3,8 +3,8 @@
 
 #include <ngadmin.h>
 
-#include <attr.h>
-#include <protocol.h>
+#include <nsdp/attr.h>
+#include <nsdp/protocol.h>
 
 #include "lib.h"
 #include "network.h"
@@ -15,6 +15,7 @@ int ngadmin_scan (struct ngadmin *nga)
 	int i;
 	List *attr, *swiList;
 	struct swi_attr *sa;
+	struct nsdp_cmd nc;
 	/*
 	sent by official win client:
 	ATTR_PRODUCT,
@@ -64,7 +65,8 @@ int ngadmin_scan (struct ngadmin *nga)
 	}
 	
 	/* send request to all potential switches */
-	i = sendNsdpPacket(nga, CODE_READ_REQ, attr);
+	prepareSend(nga, &nc, CODE_READ_REQ);
+	i = sendNsdpPacket(nga->sock, &nc, attr);
 	clearList(attr, (void(*)(void*))freeAttr);
 	if (i == -EINVAL)
 		return ERR_INVARG;
@@ -74,10 +76,15 @@ int ngadmin_scan (struct ngadmin *nga)
 	/* try to receive any packets until timeout */
 	swiList = createEmptyList();
 	/* FIXME: end after timeout whatever received packet is good or not */
-	while (recvNsdpPacket(nga, CODE_READ_REP, NULL, NULL, attr) >= 0) {
+	while (1) {
+		prepareRecv(nga, &nc, CODE_READ_REP);
+		if (recvNsdpPacket(nga->sock, &nc, attr, &nga->timeout) < 0)
+			break;
+		
 		sa = malloc(sizeof(struct swi_attr));
 		if (sa == NULL)
 			return ERR_MEM;
+		
 		extractSwitchAttributes(sa, attr);
 		clearList(attr, (void(*)(void*))freeAttr);
 		pushBackList(swiList, sa);

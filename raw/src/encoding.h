@@ -7,8 +7,9 @@
 
 #include <netinet/ether.h>
 
-#include <protocol.h>
-#include <list.h>
+#include <nsdp/protocol.h>
+#include <nsdp/net.h>
+#include <nsdp/list.h>
 
 
 struct nsdp_packet {
@@ -22,10 +23,10 @@ struct nsdp_packet {
 
 
 
-void initNsdpHeader (struct nsdp_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum);
+void initNsdpHeader (struct nsdp_header *nh, const struct nsdp_cmd *nc);
 
 
-bool validateNsdpHeader (const struct nsdp_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum);
+bool validateNsdpHeader (const struct nsdp_header *nh, const struct nsdp_cmd *nc);
 
 
 static inline void initNsdpPacket (struct nsdp_packet *np)

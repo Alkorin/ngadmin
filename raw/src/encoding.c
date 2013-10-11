@@ -2,34 +2,37 @@
 #include <string.h>
 #include <errno.h>
 
-#include <attr.h>
-#include <encoding.h>
+#include <nsdp/attr.h>
+#include "encoding.h"
 #include "encoding_attr.h"
 
 
 
-void initNsdpHeader (struct nsdp_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum)
+void initNsdpHeader (struct nsdp_header *nh, const struct nsdp_cmd *nc)
 {
 	memset(nh, 0, sizeof(struct nsdp_header));
 	nh->version = NSDP_VERSION;
-	nh->code = code;
+	nh->code = nc->code;
+	nh->error = nc->error;
+	nh->attr = htons(nc->attr_error);
 	
-	memcpy(nh->client_mac, client_mac, ETH_ALEN);
+	memcpy(nh->client_mac, &nc->client_mac, ETH_ALEN);
+	memcpy(nh->switch_mac, &nc->switch_mac, ETH_ALEN);
 	
-	if (switch_mac != NULL)
-		memcpy(nh->switch_mac, switch_mac, ETH_ALEN);
-	
-	nh->seqnum = htonl(seqnum);
+	nh->seqnum = htonl(nc->seqnum);
 	memcpy(nh->proto_id, NSDP_PROTOID, 4);
 }
 
 
-bool validateNsdpHeader (const struct nsdp_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum)
+bool validateNsdpHeader (const struct nsdp_header *nh, const struct nsdp_cmd *nc)
 {
+	unsigned int i;
+	
+	
 	if (nh->version != NSDP_VERSION)
 		return false;
 	
-	if (code > 0 && nh->code != code)
+	if (nc->code > 0 && nh->code != nc->code)
 		return false;
 	
 	if (nh->unk1 != 0)
@@ -38,13 +41,15 @@ bool validateNsdpHeader (const struct nsdp_header *nh, char code, const struct e
 	if (*(unsigned short*)nh->unk2 != 0)
 		return false;
 	
-	if (client_mac != NULL && memcmp(nh->client_mac, client_mac, ETH_ALEN) != 0)
+	for (i = 0; i < ETH_ALEN && nc->client_mac.ether_addr_octet[i] == 0; i++);
+	if (i < ETH_ALEN && memcmp(nh->client_mac, &nc->client_mac, ETH_ALEN) != 0)
 		return false;
 	
-	if (switch_mac != NULL && memcmp(nh->switch_mac, switch_mac, ETH_ALEN) != 0)
+	for (i = 0; i < ETH_ALEN && nc->switch_mac.ether_addr_octet[i] == 0; i++);
+	if (i < ETH_ALEN && memcmp(nh->switch_mac, &nc->switch_mac, ETH_ALEN) != 0)
 		return false;
 	
-	if (seqnum > 0 && ntohl(nh->seqnum) != seqnum)
+	if (nc->seqnum > 0 && ntohl(nh->seqnum) != nc->seqnum)
 		return false;
 	
 	if (memcmp(nh->proto_id, NSDP_PROTOID, 4) != 0)

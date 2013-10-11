@@ -69,25 +69,25 @@
 
 
 struct nsdp_header {
-	char version;			/* always 1, maybe version */
-	char code;			/* request code: read request, read reply, write request, write reply */
-	unsigned char error;		/* error code, 0 when no error */
-	unsigned char unk1;		/* always 0, unknown */
-	unsigned short attr;		/* attribute code which caused error, 0 when no error */
-	char unk2[2];			/* always 0, unknown */
-	char client_mac[ETH_ALEN];	/* client MAC address */
-	char switch_mac[ETH_ALEN];	/* switch MAC address */
-	unsigned int seqnum;		/* sequence number */
-	char proto_id[4];		/* always "NSDP", maybe short for "Netgear Switch Description Protocol" */
-	char unk3[4];			/* always 0, unknown */
-	char data[0];			/* attributes data */
+	unsigned char version;			/* always 1, maybe version */
+	unsigned char code;			/* request code: read request, read reply, write request, write reply */
+	unsigned char error;			/* error code, 0 when no error */
+	unsigned char unk1;			/* always 0, unknown */
+	unsigned short attr;			/* attribute code which caused error, 0 when no error */
+	unsigned char unk2[2];			/* always 0, unknown */
+	unsigned char client_mac[ETH_ALEN];	/* client MAC address */
+	unsigned char switch_mac[ETH_ALEN];	/* switch MAC address */
+	unsigned int seqnum;			/* sequence number */
+	unsigned char proto_id[4];		/* always "NSDP", maybe short for "Netgear Switch Description Protocol" */
+	unsigned char unk3[4];			/* always 0, unknown */
+	unsigned char data[0];			/* attributes data */
 } __attribute__((packed));
 
 
 struct attr_header {
 	unsigned short attr;		/* attribute code */
 	unsigned short size;		/* attribute data size */
-	char data[0];			/* attribute data */
+	unsigned char data[0];			/* attribute data */
 } __attribute__((packed));
 
 
@@ -150,7 +150,7 @@ struct attr_cabletest_result {
 /**
  * Note: this structure is not sent "as-is" on the wire.
  * A translation is done between the wire format (which uses somewhat not
- * trivial bitmap) and this simpler format. See encoding.c for more details.
+ * trivial bitmap) and this simpler format. See encoding_attr.c for more details.
  */
 struct attr_vlan_conf {
 	unsigned short vlan;		/* port number */

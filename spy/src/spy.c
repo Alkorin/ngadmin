@@ -3,22 +3,19 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#include <attr.h>
-#include <encoding.h>
+#include <nsdp/protocol.h>
+#include <nsdp/attr.h>
+#include <nsdp/net.h>
 
 
 int main (void)
 {
-	unsigned char buffer[1500];
-	struct nsdp_packet np;
-	int err = 0, s, len;
-	struct sockaddr_in local, remote;
-	socklen_t slen = sizeof(struct sockaddr_in);
-	unsigned char error;
-	unsigned short attr_error;
+	int err = 0, s;
 	List *attr;
 	ListNode *ln;
 	struct attr *at;
+	struct nsdp_cmd nc;
+	struct sockaddr_in local;
 	
 	
 	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -28,6 +25,10 @@ int main (void)
 		goto end;
 	};
 	
+	
+	memset(&nc, 0, sizeof(struct nsdp_cmd));
+	nc.remote_addr.sin_family = AF_INET;
+	nc.remote_addr.sin_port = htons(CLIENT_PORT);
 	
 	memset(&local, 0, sizeof(struct sockaddr_in));
 	local.sin_family = AF_INET;
@@ -41,29 +42,10 @@ int main (void)
 	}
 	
 	while (1) {
-		
-		len = recvfrom(s, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &slen);
-		if (len < 0) {
-			perror("recvfrom");
-			err = 3;
-			goto end;
-		}
+		attr = createEmptyList();
+		recvNsdpPacket(s, &nc, attr, NULL);
 		
 		printf("---------------------------------\n");
-		
-		np.buffer = buffer;
-		np.maxlen = len;
-		initNsdpPacket(&np);
-		
-		attr = createEmptyList();
-		
-		if (ntohs(remote.sin_port) != CLIENT_PORT ||
-		    len < (int)sizeof(struct nsdp_header) ||
-		    !validateNsdpHeader(np.nh, 0, NULL, NULL, 0) ||
-		    extractPacketAttributes(&np, attr, 0) < 0) {
-			printf("wrong packet\n");
-			goto end;
-		}
 		
 		printf("received %d attribute(s)\n", attr->count);
 		

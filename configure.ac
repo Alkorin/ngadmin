@@ -93,6 +93,7 @@ AC_CONFIG_FILES([
 	Makefile
 	raw/Makefile
 	raw/include/Makefile
+	raw/include/nsdp/Makefile
 	raw/src/Makefile
 	lib/Makefile
 	lib/include/Makefile

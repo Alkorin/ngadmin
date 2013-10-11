@@ -9,9 +9,10 @@
 #include <netinet/ether.h>
 #include <sys/ioctl.h>
 
-#include <attr.h>
-#include <encoding.h>
-#include <misc.h>
+#include <nsdp/attr.h>
+#include <nsdp/misc.h>
+#include <nsdp/net.h>
+#include <nsdp/protocol.h>
 
 #include "network.h"
 
@@ -160,114 +161,78 @@ int updateTimeout (struct ngadmin *nga)
 }
 
 
-int sendNsdpPacket (struct ngadmin *nga, char code, const List *attr)
+static int checkErrorCode (const struct nsdp_cmd *nc)
 {
-	unsigned char buffer[1500];
-	struct nsdp_packet np;
-	struct sockaddr_in remote;
-	const struct swi_attr *sa = nga->current;
-	int ret;
+	switch (nc->error) {
 	
-	
-	np.buffer = buffer;
-	np.maxlen = sizeof(buffer);
-	initNsdpPacket(&np);
-	initNsdpHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, ++nga->seq);
-	
-	ret = addPacketAttributes(&np, attr, sa == NULL ? 0 : sa->ports);
-	if (ret < 0)
-		return ret;
-	
-	memset(&remote, 0, sizeof(struct sockaddr_in));
-	remote.sin_family = AF_INET;
-	remote.sin_port = htons(SWITCH_PORT);
-	
-	/* destination address selection */
-	if (sa != NULL && !nga->keepbroad)
-		remote.sin_addr = sa->nc.ip;
-	else if (nga->globalbroad)
-		remote.sin_addr.s_addr = htonl(INADDR_BROADCAST);
-	else
-		remote.sin_addr = nga->brd;
-	
-	ret = sendto(nga->sock, buffer, getPacketTotalSize(&np), 0, (struct sockaddr*)&remote, sizeof(struct sockaddr_in));
-	if (ret < 0)
-		perror("sendto");
-	
-	
-	return ret;
-}
-
-
-int recvNsdpPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr)
-{
-	unsigned char buffer[1500];
-	struct nsdp_packet np;
-	struct sockaddr_in remote;
-	socklen_t slen = sizeof(struct sockaddr_in);
-	const struct swi_attr *sa = nga->current;
-	struct timeval rem;
-	fd_set fs;
-	int len = -1;
-	
-	
-	np.buffer = buffer;
-	
-	memset(&remote, 0, sizeof(struct sockaddr_in));
-	remote.sin_family = AF_INET;
-	
-	rem = nga->timeout;
-	
-	while (1) {
-		FD_ZERO(&fs);
-		FD_SET(nga->sock, &fs);
-		select(nga->sock + 1, &fs, NULL, NULL, &rem); /* FIXME: non portable */
-		
-		len = recvfrom(nga->sock, buffer, sizeof(buffer), MSG_DONTWAIT, (struct sockaddr*)&remote, &slen);
-		if (len < 0)
-			break;
-		
-		np.maxlen = len;
-		initNsdpPacket(&np);
-		
-		if (ntohs(remote.sin_port) != SWITCH_PORT ||
-		    len < (int)sizeof(struct nsdp_header) ||
-		    !validateNsdpHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, nga->seq) ||
-		    extractPacketAttributes(&np, attr, sa == NULL ? 0 : sa->ports) < 0)
-			continue;
-		
-		if (error != NULL)
-			*error = np.nh->error;
-		if (attr_error != NULL)
-			*attr_error = ntohs(np.nh->attr);
-		
-		len = 0;
-		break;
-	}
-	
-	
-	return len;
-}
-
-
-static int checkErrorCode (unsigned char err, unsigned short attr_error)
-{
-	switch (err) {
 	case ERROR_DENIED:
-		return attr_error == ATTR_PASSWORD ? ERR_BADPASS : ERR_DENIED;
+		return (nc->attr_error == ATTR_PASSWORD) ? ERR_BADPASS : ERR_DENIED;
+	
 	case ERROR_INVALID_VALUE:
 		return ERR_INVARG;
+	
 	default:
 		return ERR_OK;
 	}
 }
 
 
+void prepareSend (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code)
+{
+	struct swi_attr *sa = nga->current;
+	
+	
+	memset(nc, 0, sizeof(struct nsdp_cmd));
+	memcpy(&nc->client_mac, &nga->localmac, ETH_ALEN);
+	nc->remote_addr.sin_family = AF_INET;
+	nc->remote_addr.sin_port = htons(SWITCH_PORT);
+	if (sa != NULL) {
+		memcpy(&nc->switch_mac, &sa->mac, ETH_ALEN);
+		nc->ports = sa->ports;
+	}
+	
+	/* destination address selection */
+	if (sa != NULL && !nga->keepbroad)
+		nc->remote_addr.sin_addr = sa->nc.ip;
+	else if (nga->globalbroad)
+		nc->remote_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+	else
+		nc->remote_addr.sin_addr = nga->brd;
+	
+	nc->seqnum = ++nga->seq;
+	nc->code = code;
+}
+
+
+void prepareRecv (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code)
+{
+	struct swi_attr *sa = nga->current;
+	
+	
+	memset(nc, 0, sizeof(struct nsdp_cmd));
+	memcpy(&nc->client_mac, &nga->localmac, ETH_ALEN);
+	nc->remote_addr.sin_family = AF_INET;
+	nc->remote_addr.sin_port = htons(SWITCH_PORT);
+	if (sa != NULL) {
+		memcpy(&nc->switch_mac, &sa->mac, ETH_ALEN);
+		nc->ports = sa->ports;
+	}
+	
+	/* set filter on switch IP */
+	if (sa == NULL)
+		nc->remote_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	else
+		nc->remote_addr.sin_addr = sa->nc.ip;
+	
+	nc->seqnum = nga->seq;
+	nc->code = code;
+}
+
+
 int readRequest (struct ngadmin *nga, List *attr)
 {
 	int i, ret = ERR_OK;
-	unsigned char err;
-	unsigned short attr_error;
+	struct nsdp_cmd nc;
 	
 	
 	if (nga == NULL) {
@@ -278,25 +243,28 @@ int readRequest (struct ngadmin *nga, List *attr)
 	/* add end attribute to end */
 	pushBackList(attr, newEmptyAttr(ATTR_END));
 	
-	i = sendNsdpPacket(nga, CODE_READ_REQ, attr);
+	prepareSend(nga, &nc, CODE_READ_REQ);
+	i = sendNsdpPacket(nga->sock, &nc, attr);
 	
-	/* the list will be filled again by recvNgPacket */
+	/* do not destroy the list, it will be filled again later by recvNsdpPacket */
 	clearList(attr, (void(*)(void*))freeAttr);
 	
-	if (i >= 0)
-		i = recvNsdpPacket(nga, CODE_READ_REP, &err, &attr_error, attr);
+	if (i >= 0) {
+		prepareRecv(nga, &nc, CODE_READ_REP);
+		i = recvNsdpPacket(nga->sock, &nc, attr, &nga->timeout);
+	}
 	
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
 		goto end;
 	} else if (i < 0) {
-		ret = ( errno == EAGAIN || errno == EWOULDBLOCK ) ? ERR_TIMEOUT : ERR_NET;
+		ret = (errno == EAGAIN || errno == EWOULDBLOCK) ? ERR_TIMEOUT : ERR_NET;
 		goto end;
 	}
 	
 	
 	/* check the switch error code */
-	ret = checkErrorCode(err, attr_error);
+	ret = checkErrorCode(&nc);
 	
 	
 end:
@@ -307,9 +275,8 @@ end:
 int writeRequest (struct ngadmin *nga, List *attr)
 {
 	int i, ret = ERR_OK;
-	unsigned char err;
-	unsigned short attr_error;
 	struct attr *at;
+	struct nsdp_cmd nc;
 	
 	
 	if (nga == NULL) {
@@ -333,25 +300,28 @@ int writeRequest (struct ngadmin *nga, List *attr)
 	/* add end attribute to end */
 	pushBackList(attr, newEmptyAttr(ATTR_END));
 	
-	i = sendNsdpPacket(nga, CODE_WRITE_REQ, attr);
+	prepareSend(nga, &nc, CODE_WRITE_REQ);
+	i = sendNsdpPacket(nga->sock, &nc, attr);
 	
 	/* the list will be filled again by recvNgPacket
 	but normally it will be still empty */
 	clearList(attr, (void(*)(void*))freeAttr);
 	
-	if (i >= 0)
-		i = recvNsdpPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr);
+	if (i >= 0) {
+		prepareRecv(nga, &nc, CODE_WRITE_REP);
+		i = recvNsdpPacket(nga->sock, &nc, attr, &nga->timeout);
+	}
 	
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
 		goto end;
 	} else if (i < 0) {
-		ret = (errno == EAGAIN || errno == EWOULDBLOCK) ? ERR_TIMEOUT : ERR_NET ;
+		ret = (errno == EAGAIN || errno == EWOULDBLOCK) ? ERR_TIMEOUT : ERR_NET;
 		goto end;
 	}
 	
 	/* check the switch error code */
-	ret = checkErrorCode(err, attr_error);
+	ret = checkErrorCode(&nc);
 	
 	
 end:
