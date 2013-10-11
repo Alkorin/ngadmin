@@ -144,23 +144,6 @@ int forceInterface (struct ngadmin *nga)
 }
 
 
-int updateTimeout (struct ngadmin *nga)
-{
-	int ret;
-	
-	
-	/* specify receive timeout */
-	ret = setsockopt(nga->sock, SOL_SOCKET, SO_RCVTIMEO, &nga->timeout, sizeof(struct timeval));
-	if (ret < 0) {
-		perror("setsockopt(SO_RCVTIMEO)");
-		return ret;
-	}
-	
-	
-	return 0;
-}
-
-
 static int checkErrorCode (const struct nsdp_cmd *nc)
 {
 	switch (nc->error) {

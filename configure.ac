@@ -86,7 +86,18 @@ AC_TYPE_SIZE_T
 
 # check for library functions
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([inet_ntoa memchr memset select socket strcasecmp strdup strtol strtoul])
+AC_CHECK_FUNCS([inet_ntoa memchr memset socket poll strcasecmp strdup strtol strtoul])
+
+AC_CHECK_FUNC([clock_gettime], [
+	AC_DEFINE([HAVE_CLOCK_GETTIME], [1], [Define if you have clock_gettime])
+], [
+	AC_CHECK_LIB([rt], [clock_gettime], [
+		AC_SUBST([RT_LIBS], [-lrt])
+		AC_DEFINE([HAVE_CLOCK_GETTIME], [1], [Define if you have clock_gettime])
+	], [
+		AC_CHECK_FUNCS([gettimeofday])
+	])
+])
 
 
 AC_CONFIG_FILES([

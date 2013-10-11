@@ -8,7 +8,7 @@
 #include "network.h"
 
 
-static const struct timeval default_timeout = {.tv_sec = 4, .tv_usec = 0};
+static const struct timespec default_timeout = {.tv_sec = 4, .tv_nsec = 0};
 
 
 struct ngadmin* ngadmin_init (const char *iface)
@@ -29,10 +29,6 @@ struct ngadmin* ngadmin_init (const char *iface)
 	}
 	
 	nga->timeout = default_timeout;
-	if (updateTimeout(nga) < 0) {
-		free(nga);
-		return NULL;
-	}
 	
 	
 	return nga;
@@ -103,10 +99,8 @@ int ngadmin_setTimeout (struct ngadmin *nga, const struct timeval *tv)
 	if (nga == NULL || tv == NULL)
 		return ERR_INVARG;
 	
-	nga->timeout = *tv;
-	if (updateTimeout(nga) < 0)
-		ret = ERR_NET;
-	
+	nga->timeout.tv_sec = tv->tv_sec;
+	nga->timeout.tv_nsec = tv->tv_usec * 1000;
 	
 	return ret;
 }

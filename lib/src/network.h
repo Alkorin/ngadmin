@@ -20,9 +20,6 @@ int stopNetwork (struct ngadmin *nga);
 int forceInterface (struct ngadmin *nga);
 
 
-int updateTimeout (struct ngadmin *nga);
-
-
 void prepareSend (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code);
 
 

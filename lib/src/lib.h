@@ -21,7 +21,7 @@ struct ngadmin {
 	struct sockaddr_in local;	/* local address & port */
 	struct in_addr brd;		/* broadcast address */
 	char iface[IFNAMSIZ];		/* interface */
-	struct timeval timeout;		/* timeout */
+	struct timespec timeout;	/* timeout */
 	struct ether_addr localmac;	/* local MAC address */
 	bool keepbroad;			/* keep broadcasting */
 	bool globalbroad;		/* use global broadcast address (255.255.255.255) */

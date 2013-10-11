@@ -26,7 +26,7 @@ struct nsdp_cmd {
 int sendNsdpPacket (int sock, const struct nsdp_cmd *nc, const List *attr);
 
 
-int recvNsdpPacket (int sock, struct nsdp_cmd *nc, List *attr, const struct timeval *timeout);
+int recvNsdpPacket (int sock, struct nsdp_cmd *nc, List *attr, const struct timespec *timeout);
 
 
 #endif
