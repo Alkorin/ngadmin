@@ -16,13 +16,6 @@
 #include <netinet/ether.h>
 
 
-#ifdef BUILD_LIB
-#define EXPORT	__attribute__((visibility("default")))
-#else
-#define EXPORT	
-#endif
-
-
 
 /**
  * Maximum size of product string. 
@@ -245,7 +238,7 @@ extern "C" {
  * @param iface The network interface to use. 
  * @return A pointer to a ngadmin structure, or NULL if an error occurred. 
  */
-struct ngadmin* ngadmin_init (const char *iface) EXPORT;
+struct ngadmin* ngadmin_init (const char *iface);
 
 
 /**
@@ -255,7 +248,7 @@ struct ngadmin* ngadmin_init (const char *iface) EXPORT;
  * @param nga A pointer to the ngadmin structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  */
-int ngadmin_close (struct ngadmin *nga) EXPORT;
+int ngadmin_close (struct ngadmin *nga);
 
 
 /**
@@ -276,7 +269,7 @@ int ngadmin_close (struct ngadmin *nga) EXPORT;
  * @param nga A pointer to the ngadmin structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  */
-int ngadmin_forceInterface (struct ngadmin *nga) EXPORT;
+int ngadmin_forceInterface (struct ngadmin *nga);
 
 
 /**
@@ -297,7 +290,7 @@ int ngadmin_forceInterface (struct ngadmin *nga) EXPORT;
  * @param value Enable or disable the systematic use of broadcast packets. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value) EXPORT;
+int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value);
 
 
 /**
@@ -311,7 +304,7 @@ int ngadmin_setKeepBroadcasting (struct ngadmin *nga, bool value) EXPORT;
  * @param value Enable or disable the use of the global broadcast address. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_useGlobalBroadcast (struct ngadmin *nga, bool value) EXPORT;
+int ngadmin_useGlobalBroadcast (struct ngadmin *nga, bool value);
 
 
 /**
@@ -321,7 +314,7 @@ int ngadmin_useGlobalBroadcast (struct ngadmin *nga, bool value) EXPORT;
  * @param pass The password string to use. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setPassword (struct ngadmin *nga, const char *pass) EXPORT;
+int ngadmin_setPassword (struct ngadmin *nga, const char *pass);
 
 
 /**
@@ -331,7 +324,7 @@ int ngadmin_setPassword (struct ngadmin *nga, const char *pass) EXPORT;
  * @param tv A pointer to a timeval structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setTimeout (struct ngadmin *nga, const struct timeval *tv) EXPORT;
+int ngadmin_setTimeout (struct ngadmin *nga, const struct timeval *tv);
 
 
 /**
@@ -342,7 +335,7 @@ int ngadmin_setTimeout (struct ngadmin *nga, const struct timeval *tv) EXPORT;
  * @param nga A pointer to the ngadmin structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_scan (struct ngadmin *nga) EXPORT;
+int ngadmin_scan (struct ngadmin *nga);
 
 
 /**
@@ -353,7 +346,7 @@ int ngadmin_scan (struct ngadmin *nga) EXPORT;
  * @param nb A pointer to an integer which will receive the number of switches. 
  * @return A pointer to an array of switch characteristics. 
  */
-const struct swi_attr* ngadmin_getSwitchTab (struct ngadmin *nga, int *nb) EXPORT;
+const struct swi_attr* ngadmin_getSwitchTab (struct ngadmin *nga, int *nb);
 
 
 /**
@@ -362,7 +355,7 @@ const struct swi_attr* ngadmin_getSwitchTab (struct ngadmin *nga, int *nb) EXPOR
  * @param nga A pointer to the ngadmin structure. 
  * @return A pointer the switch characteristics or NULL if you are not logged. 
  **/
-const struct swi_attr* ngadmin_getCurrentSwitch (struct ngadmin *nga) EXPORT;
+const struct swi_attr* ngadmin_getCurrentSwitch (struct ngadmin *nga);
 
 
 
@@ -375,7 +368,7 @@ const struct swi_attr* ngadmin_getCurrentSwitch (struct ngadmin *nga) EXPORT;
  * @param filename A path to the file of the new firmware to send. 
  * @return ERR_NOTIMPL
  **/
-int ngadmin_upgradeFirmware (struct ngadmin *nga, const char *filename) EXPORT;
+int ngadmin_upgradeFirmware (struct ngadmin *nga, const char *filename);
 
 
 /**
@@ -388,7 +381,7 @@ int ngadmin_upgradeFirmware (struct ngadmin *nga, const char *filename) EXPORT;
  * @param id The id (position in the switch array) of the switch you want to login to. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_login (struct ngadmin *nga, int id) EXPORT;
+int ngadmin_login (struct ngadmin *nga, int id);
 
 
 /**
@@ -400,7 +393,7 @@ int ngadmin_login (struct ngadmin *nga, int id) EXPORT;
  *         Must not be NULL. The array size must be ports_count*sizeof(unsigned char). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports) EXPORT;
+int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports);
 
 
 /**
@@ -411,7 +404,7 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports) EXPORT;
  * @param name The name string to use. A NULL value clears the name. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setName (struct ngadmin *nga, const char *name) EXPORT;
+int ngadmin_setName (struct ngadmin *nga, const char *name);
 
 
 /**
@@ -423,7 +416,7 @@ int ngadmin_setName (struct ngadmin *nga, const char *name) EXPORT;
  *        The array size must be ports_count*sizeof(struct port_stats). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps) EXPORT;
+int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps);
 
 
 /**
@@ -433,7 +426,7 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps) EXPO
  * @param nga A pointer to the ngadmin structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_resetPortsStatistics (struct ngadmin *nga) EXPORT;
+int ngadmin_resetPortsStatistics (struct ngadmin *nga);
 
 
 /**
@@ -445,7 +438,7 @@ int ngadmin_resetPortsStatistics (struct ngadmin *nga) EXPORT;
  * @param pass The new password string to use. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_changePassword (struct ngadmin *nga, const char* pass) EXPORT;
+int ngadmin_changePassword (struct ngadmin *nga, const char* pass);
 
 
 /**
@@ -456,7 +449,7 @@ int ngadmin_changePassword (struct ngadmin *nga, const char* pass) EXPORT;
  * @param s A pointer to an integer which will receive 0 or 1. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getStormFilterState (struct ngadmin *nga, int *s) EXPORT;
+int ngadmin_getStormFilterState (struct ngadmin *nga, int *s);
 
 
 /**
@@ -467,7 +460,7 @@ int ngadmin_getStormFilterState (struct ngadmin *nga, int *s) EXPORT;
  * @param s An integer with value 0 or 1. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setStormFilterState (struct ngadmin *nga, int s) EXPORT;
+int ngadmin_setStormFilterState (struct ngadmin *nga, int s);
 
 
 /**
@@ -479,7 +472,7 @@ int ngadmin_setStormFilterState (struct ngadmin *nga, int s) EXPORT;
  *              The array size must be ports_count*sizeof(int). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports) EXPORT;
+int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports);
 
 
 /**
@@ -491,7 +484,7 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports) EXPORT;
  *              The array size must be ports_count*sizeof(int). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports) EXPORT;
+int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports);
 
 
 /**
@@ -503,7 +496,7 @@ int ngadmin_setStormFilterValues (struct ngadmin *nga, const int *ports) EXPORT;
  *              The array size must be ports_count*sizeof(int). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) EXPORT;
+int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports);
 
 
 /**
@@ -515,7 +508,7 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports) EXPORT;
  *              The array size must be ports_count*sizeof(int). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports) EXPORT;
+int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports);
 
 
 /**
@@ -526,7 +519,7 @@ int ngadmin_setBitrateLimits (struct ngadmin *nga, const int *ports) EXPORT;
  * @param s A pointer to an integer. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getQOSMode (struct ngadmin *nga, int *s) EXPORT;
+int ngadmin_getQOSMode (struct ngadmin *nga, int *s);
 
 
 /**
@@ -537,7 +530,7 @@ int ngadmin_getQOSMode (struct ngadmin *nga, int *s) EXPORT;
  * @param s An integer with the new mode. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setQOSMode (struct ngadmin *nga, int s) EXPORT;
+int ngadmin_setQOSMode (struct ngadmin *nga, int s);
 
 
 /**
@@ -550,7 +543,7 @@ int ngadmin_setQOSMode (struct ngadmin *nga, int s) EXPORT;
                 The array size must be ports_count*sizeof(ports). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getQOSValues (struct ngadmin *nga, char *ports) EXPORT;
+int ngadmin_getQOSValues (struct ngadmin *nga, char *ports);
 
 
 /**
@@ -563,7 +556,7 @@ int ngadmin_getQOSValues (struct ngadmin *nga, char *ports) EXPORT;
                 The array size must be ports_count*sizeof(ports). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setQOSValues (struct ngadmin *nga, const char *ports) EXPORT;
+int ngadmin_setQOSValues (struct ngadmin *nga, const char *ports);
 
 
 /**
@@ -575,7 +568,7 @@ int ngadmin_setQOSValues (struct ngadmin *nga, const char *ports) EXPORT;
  * @param nga A pointer to the ngadmin structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_restart (struct ngadmin *nga) EXPORT;
+int ngadmin_restart (struct ngadmin *nga);
 
 
 /**
@@ -587,7 +580,7 @@ int ngadmin_restart (struct ngadmin *nga) EXPORT;
  * @param nga A pointer to the ngadmin structure. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_defaults (struct ngadmin *nga) EXPORT;
+int ngadmin_defaults (struct ngadmin *nga);
 
 
 /**
@@ -603,7 +596,7 @@ int ngadmin_defaults (struct ngadmin *nga) EXPORT;
                 The array size must be (1+ports_count)*sizeof(char). 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getMirror (struct ngadmin *nga, char *ports) EXPORT;
+int ngadmin_getMirror (struct ngadmin *nga, char *ports);
 
 
 /**
@@ -616,7 +609,7 @@ int ngadmin_getMirror (struct ngadmin *nga, char *ports) EXPORT;
                 If it is NULL, port mirroring is disabled. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setMirror (struct ngadmin *nga, const char *ports) EXPORT;
+int ngadmin_setMirror (struct ngadmin *nga, const char *ports);
 
 
 /**
@@ -627,7 +620,7 @@ int ngadmin_setMirror (struct ngadmin *nga, const char *ports) EXPORT;
  * @param ic A pointer to an igmp_conf structure. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic) EXPORT;
+int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic);
 
 
 /**
@@ -638,7 +631,7 @@ int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic) EXPORT;
  * @param ic A pointer to an igmp_conf structure. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setIGMPConf (struct ngadmin *nga, const struct igmp_conf *ic) EXPORT;
+int ngadmin_setIGMPConf (struct ngadmin *nga, const struct igmp_conf *ic);
 
 
 /**
@@ -652,7 +645,7 @@ int ngadmin_setIGMPConf (struct ngadmin *nga, const struct igmp_conf *ic) EXPORT
  * @param nb The number of elements in the array. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) EXPORT;
+int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb);
 
 
 /**
@@ -664,7 +657,7 @@ int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb) EXPORT
              Only non-zero fields of the structure are taken into account. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) EXPORT;
+int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc);
 
 
 /**
@@ -675,7 +668,7 @@ int ngadmin_setNetConf (struct ngadmin *nga, const struct net_conf *nc) EXPORT;
  * @param t A pointer to an integer which will receive the VLAN type. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
+int ngadmin_getVLANType (struct ngadmin *nga, int *t);
 
 
 /**
@@ -686,7 +679,7 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t) EXPORT;
  * @param t An integer which contains the new VLAN type. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setVLANType (struct ngadmin *nga, int t) EXPORT;
+int ngadmin_setVLANType (struct ngadmin *nga, int t);
 
 
 /**
@@ -699,7 +692,7 @@ int ngadmin_setVLANType (struct ngadmin *nga, int t) EXPORT;
                 number of associated VLAN. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports) EXPORT;
+int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports);
 
 
 /**
@@ -712,7 +705,7 @@ int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports) EXPORT;
                 number of associated VLAN. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports) EXPORT;
+int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports);
 
 
 /**
@@ -732,7 +725,7 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports) EX
              It will receive the actual number of VLAN written in the arrays. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsigned char *ports, int *nb) EXPORT;
+int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsigned char *ports, int *nb);
 
 
 /**
@@ -746,7 +739,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
                 configuration. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned char *ports) EXPORT;
+int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned char *ports);
 
 
 /**
@@ -760,7 +753,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
                 configuration. Must not be NULL. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsigned char *ports) EXPORT;
+int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsigned char *ports);
 
 
 /**
@@ -772,7 +765,7 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
  * @param vlan The VLAN you want to destroy. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan) EXPORT;
+int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan);
 
 
 /**
@@ -785,7 +778,7 @@ int ngadmin_VLANDestroy (struct ngadmin *nga, unsigned short vlan) EXPORT;
  *              The array size must be sizeof(unsigned short)*ports_count. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
+int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports);
 
 
 /**
@@ -797,7 +790,7 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports) EXPORT;
  * @param vlan The new PVID value. 
  * @return ERR_OK when everything is well or an error code otherwise. 
  **/
-int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan) EXPORT;
+int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan);
 
 
 #ifdef __cplusplus

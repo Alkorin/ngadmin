@@ -1,12 +1,18 @@
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
 #include <setjmp.h>
 
 #include <getopt.h>
+#ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
 #include <readline/history.h>
+#endif
 
 #include "common.h"
 #include "commands.h"
@@ -46,6 +52,7 @@ static const struct TreeNode* getSubCom (char **com, int n, int *t)
 }
 
 
+#ifdef HAVE_LIBREADLINE
 static const struct TreeNode *compcur;
 
 
@@ -103,6 +110,7 @@ static char** my_completion (const char *text, int start, int end UNUSED)
 	
 	return matches;
 }
+#endif /* HAVE_LIBREADLINE */
 
 
 int main_loop_continue;
@@ -211,7 +219,11 @@ int main (int argc, char **argv)
 	
 	tcgetattr(STDIN_FILENO, &orig_term);
 	current_term = orig_term;
+#ifdef HAVE_LIBREADLINE
 	batch = false;
+#else
+	batch = true;
+#endif
 	
 	opterr = 0;
 	
@@ -323,11 +335,13 @@ int main (int argc, char **argv)
 			goto end;
 		}
 	} else {
+#ifdef HAVE_LIBREADLINE
 		/* initialize readline functions */
 		rl_attempted_completion_function = my_completion;
 		rl_completion_entry_function = my_generator;
 		
 		sigsetjmp(jmpbuf, 1);
+#endif
 	}
 	
 	main_loop_continue = 1;
@@ -337,8 +351,10 @@ int main (int argc, char **argv)
 		n = 0;
 		if (batch)
 			n = getline(&line, (size_t*)&i, stdin);
+#ifdef HAVE_LIBREADLINE
 		else
 			line = readline("> ");
+#endif
 		if (n < 0 || line == NULL)
 			goto end;
 		
@@ -350,8 +366,10 @@ int main (int argc, char **argv)
 			free(line);
 			continue;
 		} else {
+#ifdef HAVE_LIBREADLINE
 			if (!batch)
 				add_history(line);
+#endif
 			free(line);
 		}
 		
