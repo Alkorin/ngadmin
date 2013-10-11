@@ -64,7 +64,7 @@ int ngadmin_scan (struct ngadmin *nga)
 	}
 	
 	/* send request to all potential switches */
-	i = sendNgPacket(nga, CODE_READ_REQ, attr);
+	i = sendNsdpPacket(nga, CODE_READ_REQ, attr);
 	clearList(attr, (void(*)(void*))freeAttr);
 	if (i == -EINVAL)
 		return ERR_INVARG;
@@ -74,7 +74,7 @@ int ngadmin_scan (struct ngadmin *nga)
 	/* try to receive any packets until timeout */
 	swiList = createEmptyList();
 	/* FIXME: end after timeout whatever received packet is good or not */
-	while (recvNgPacket(nga, CODE_READ_REP, NULL, NULL, attr) >= 0) {
+	while (recvNsdpPacket(nga, CODE_READ_REP, NULL, NULL, attr) >= 0) {
 		sa = malloc(sizeof(struct swi_attr));
 		if (sa == NULL)
 			return ERR_MEM;

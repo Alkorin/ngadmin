@@ -10,7 +10,8 @@
 #include <sys/ioctl.h>
 
 #include <attr.h>
-#include <protocol.h>
+#include <encoding.h>
+#include <misc.h>
 
 #include "network.h"
 
@@ -159,10 +160,10 @@ int updateTimeout (struct ngadmin *nga)
 }
 
 
-int sendNgPacket (struct ngadmin *nga, char code, const List *attr)
+int sendNsdpPacket (struct ngadmin *nga, char code, const List *attr)
 {
-	char buffer[1500];
-	struct ng_packet np;
+	unsigned char buffer[1500];
+	struct nsdp_packet np;
 	struct sockaddr_in remote;
 	const struct swi_attr *sa = nga->current;
 	int ret;
@@ -170,8 +171,8 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr)
 	
 	np.buffer = buffer;
 	np.maxlen = sizeof(buffer);
-	initNgPacket(&np);
-	initNgHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, ++nga->seq);
+	initNsdpPacket(&np);
+	initNsdpHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, ++nga->seq);
 	
 	ret = addPacketAttributes(&np, attr, sa == NULL ? 0 : sa->ports);
 	if (ret < 0)
@@ -198,10 +199,10 @@ int sendNgPacket (struct ngadmin *nga, char code, const List *attr)
 }
 
 
-int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr)
+int recvNsdpPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr)
 {
-	char buffer[1500];
-	struct ng_packet np;
+	unsigned char buffer[1500];
+	struct nsdp_packet np;
 	struct sockaddr_in remote;
 	socklen_t slen = sizeof(struct sockaddr_in);
 	const struct swi_attr *sa = nga->current;
@@ -218,22 +219,20 @@ int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned
 	rem = nga->timeout;
 	
 	while (1) {
-		
 		FD_ZERO(&fs);
 		FD_SET(nga->sock, &fs);
-		select(nga->sock+1, &fs, NULL, NULL, &rem); /* FIXME: non portable */
+		select(nga->sock + 1, &fs, NULL, NULL, &rem); /* FIXME: non portable */
 		
 		len = recvfrom(nga->sock, buffer, sizeof(buffer), MSG_DONTWAIT, (struct sockaddr*)&remote, &slen);
-		
 		if (len < 0)
 			break;
 		
 		np.maxlen = len;
-		initNgPacket(&np);
+		initNsdpPacket(&np);
 		
 		if (ntohs(remote.sin_port) != SWITCH_PORT ||
-		    len < (int)sizeof(struct ng_header) ||
-		    !validateNgHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, nga->seq) ||
+		    len < (int)sizeof(struct nsdp_header) ||
+		    !validateNsdpHeader(np.nh, code, &nga->localmac, sa == NULL ? NULL : &sa->mac, nga->seq) ||
 		    extractPacketAttributes(&np, attr, sa == NULL ? 0 : sa->ports) < 0)
 			continue;
 		
@@ -279,13 +278,13 @@ int readRequest (struct ngadmin *nga, List *attr)
 	/* add end attribute to end */
 	pushBackList(attr, newEmptyAttr(ATTR_END));
 	
-	i = sendNgPacket(nga, CODE_READ_REQ, attr);
+	i = sendNsdpPacket(nga, CODE_READ_REQ, attr);
 	
 	/* the list will be filled again by recvNgPacket */
 	clearList(attr, (void(*)(void*))freeAttr);
 	
 	if (i >= 0)
-		i = recvNgPacket(nga, CODE_READ_REP, &err, &attr_error, attr);
+		i = recvNsdpPacket(nga, CODE_READ_REP, &err, &attr_error, attr);
 	
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
@@ -334,20 +333,20 @@ int writeRequest (struct ngadmin *nga, List *attr)
 	/* add end attribute to end */
 	pushBackList(attr, newEmptyAttr(ATTR_END));
 	
-	i = sendNgPacket(nga, CODE_WRITE_REQ, attr);
+	i = sendNsdpPacket(nga, CODE_WRITE_REQ, attr);
 	
 	/* the list will be filled again by recvNgPacket
 	but normally it will be still empty */
 	clearList(attr, (void(*)(void*))freeAttr);
 	
 	if (i >= 0)
-		i = recvNgPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr);
+		i = recvNsdpPacket(nga, CODE_WRITE_REP, &err, &attr_error, attr);
 	
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
 		goto end;
 	} else if (i < 0) {
-		ret = ( errno==EAGAIN || errno==EWOULDBLOCK ) ? ERR_TIMEOUT : ERR_NET ;
+		ret = (errno == EAGAIN || errno == EWOULDBLOCK) ? ERR_TIMEOUT : ERR_NET ;
 		goto end;
 	}
 	

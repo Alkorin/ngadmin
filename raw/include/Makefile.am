@@ -1,3 +1,3 @@
 
-noinst_HEADERS = attr.h list.h protocol.h
+noinst_HEADERS = attr.h encoding.h list.h misc.h protocol.h
 

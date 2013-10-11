@@ -22,10 +22,10 @@ int forceInterface (struct ngadmin *nga);
 int updateTimeout (struct ngadmin *nga);
 
 
-int sendNgPacket (struct ngadmin *nga, char code, const List *attr);
+int sendNsdpPacket (struct ngadmin *nga, char code, const List *attr);
 
 
-int recvNgPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr);
+int recvNsdpPacket (struct ngadmin *nga, char code, unsigned char *error, unsigned short *attr_error, List *attr);
 
 
 int readRequest (struct ngadmin *nga, List *attr);

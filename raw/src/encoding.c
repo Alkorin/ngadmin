@@ -1,55 +1,17 @@
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 
-#include "attr.h"
-#include "protocol.h"
+#include <attr.h>
+#include <encoding.h>
+#include "encoding_attr.h"
 
 
 
-const char passwordKey[] = "NtgrSmartSwitchRock";
-
-
-void passwordEndecode (char *buf, unsigned int len)
+void initNsdpHeader (struct nsdp_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum)
 {
-	const char *k = passwordKey;
-	unsigned int i;
-	
-	if (buf == NULL || len <= 0)
-		return;
-	
-	for (i = 0; i < len; i++) {
-		if (*k == '\0')
-			k = passwordKey;
-		buf[i] ^= *k++;
-	}
-}
-
-
-int trim (char *txt, int start)
-{
-	char *p;
-	
-	if (txt == NULL)
-		return 0;
-	
-	p = txt + start;
-	while (p >= txt && (*p == ' ' || *p == '\n')) {
-		*p = '\0';
-		p--;
-	}
-	
-	return p - txt + 1;
-}
-
-
-void initNgHeader (struct ng_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum)
-{
-	memset(nh, 0, sizeof(struct ng_header));
-	nh->version = 1;
+	memset(nh, 0, sizeof(struct nsdp_header));
+	nh->version = NSDP_VERSION;
 	nh->code = code;
 	
 	memcpy(nh->client_mac, client_mac, ETH_ALEN);
@@ -58,13 +20,13 @@ void initNgHeader (struct ng_header *nh, char code, const struct ether_addr *cli
 		memcpy(nh->switch_mac, switch_mac, ETH_ALEN);
 	
 	nh->seqnum = htonl(seqnum);
-	memcpy(nh->proto_id, "NSDP", 4);
+	memcpy(nh->proto_id, NSDP_PROTOID, 4);
 }
 
 
-bool validateNgHeader (const struct ng_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum)
+bool validateNsdpHeader (const struct nsdp_header *nh, char code, const struct ether_addr *client_mac, const struct ether_addr *switch_mac, unsigned int seqnum)
 {
-	if (nh->version != 1)
+	if (nh->version != NSDP_VERSION)
 		return false;
 	
 	if (code > 0 && nh->code != code)
@@ -85,7 +47,7 @@ bool validateNgHeader (const struct ng_header *nh, char code, const struct ether
 	if (seqnum > 0 && ntohl(nh->seqnum) != seqnum)
 		return false;
 	
-	if (memcmp(nh->proto_id, "NSDP", 4) != 0)
+	if (memcmp(nh->proto_id, NSDP_PROTOID, 4) != 0)
 		return false;
 	
 	if (*(unsigned int*)nh->unk3 != 0)
@@ -95,7 +57,7 @@ bool validateNgHeader (const struct ng_header *nh, char code, const struct ether
 }
 
 
-void addPacketAttr (struct ng_packet *np, struct attr *at)
+static void addPacketAttr (struct nsdp_packet *np, struct attr *at)
 {
 	struct attr_header *ah = np->ah;
 	
@@ -113,34 +75,7 @@ void addPacketAttr (struct ng_packet *np, struct attr *at)
 }
 
 
-struct attr* newAttr (unsigned short attr, unsigned short size, void *data)
-{
-	struct attr *at;
-	
-	
-	at = malloc(sizeof(struct attr));
-	if (at == NULL)
-		return NULL;
-	
-	at->attr = attr;
-	at->size = size;
-	at->data = data;
-	
-	
-	return at;
-}
-
-
-void freeAttr (struct attr *at)
-{
-	if (at != NULL) {
-		free(at->data);
-		free(at);
-	}
-}
-
-
-int addPacketAttributes (struct ng_packet *np, const List* attr, unsigned char ports)
+int addPacketAttributes (struct nsdp_packet *np, const List* attr, unsigned char ports)
 {
 	ListNode *ln;
 	struct attr *at;
@@ -168,7 +103,7 @@ int addPacketAttributes (struct ng_packet *np, const List* attr, unsigned char p
 }
 
 
-int extractPacketAttributes (struct ng_packet *np, List *attr, unsigned char ports)
+int extractPacketAttributes (struct nsdp_packet *np, List *attr, unsigned char ports)
 {
 	struct attr *at;
 	const struct attr_handler *ah;
@@ -178,7 +113,6 @@ int extractPacketAttributes (struct ng_packet *np, List *attr, unsigned char por
 	
 	
 	while (getPacketTotalSize(np) < np->maxlen) {
-		
 		/* no room for an attribute header: error */
 		if (getPacketTotalSize(np) + (int)sizeof(struct attr_header) > np->maxlen) {
 			ret = -1;
@@ -204,7 +138,7 @@ int extractPacketAttributes (struct ng_packet *np, List *attr, unsigned char por
 		if (size == 0) {
 			at->data = NULL;
 		} else {
-			at->data = malloc(size * sizeof(char));
+			at->data = malloc(size * sizeof(unsigned char));
 			memcpy(at->data, np->ah->data, size);
 		}
 		
@@ -241,40 +175,6 @@ next:
 	
 	
 	return ret;
-}
-
-
-void filterAttributes (List *attr, ...)
-{
-	va_list ap;
-	ListNode *ln, *pr;
-	struct attr *at;
-	unsigned short attrcode;
-	bool keep;
-	
-	
-	ln = attr->first;
-	while (ln != NULL) {
-		at = ln->data;
-		
-		va_start(ap, attr);
-		keep = false;
-		attrcode = 0;
-		while (!keep && attrcode != ATTR_END) {
-			attrcode = (unsigned short)va_arg(ap, unsigned int);
-			keep = keep || (at->attr == attrcode);
-		}
-		va_end(ap);
-		
-		if (keep) {
-			ln = ln->next;
-		} else {
-			pr = ln;
-			ln = ln->next;
-			destroyElement(attr, pr, (void(*)(void*))freeAttr);
-		}
-	}
-	
 }
 
 

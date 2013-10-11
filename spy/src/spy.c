@@ -3,14 +3,14 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#include <protocol.h>
 #include <attr.h>
+#include <encoding.h>
 
 
 int main (void)
 {
-	char buffer[1500];
-	struct ng_packet np;
+	unsigned char buffer[1500];
+	struct nsdp_packet np;
 	int err = 0, s, len;
 	struct sockaddr_in local, remote;
 	socklen_t slen = sizeof(struct sockaddr_in);
@@ -53,13 +53,13 @@ int main (void)
 		
 		np.buffer = buffer;
 		np.maxlen = len;
-		initNgPacket(&np);
+		initNsdpPacket(&np);
 		
 		attr = createEmptyList();
 		
 		if (ntohs(remote.sin_port) != CLIENT_PORT ||
-		    len < (int)sizeof(struct ng_header) ||
-		    !validateNgHeader(np.nh, 0, NULL, NULL, 0) ||
+		    len < (int)sizeof(struct nsdp_header) ||
+		    !validateNsdpHeader(np.nh, 0, NULL, NULL, 0) ||
 		    extractPacketAttributes(&np, attr, 0) < 0) {
 			printf("wrong packet\n");
 			goto end;
