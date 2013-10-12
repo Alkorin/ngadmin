@@ -86,7 +86,6 @@ static char* my_generator (const char* text, int state)
 
 static char** my_completion (const char *text, int start, int end UNUSED)
 {
-	char **matches = NULL;
 	char *line, *com[MAXCOM];
 	int i, n;
 	
@@ -99,16 +98,15 @@ static char** my_completion (const char *text, int start, int end UNUSED)
 	free(line);
 	
 	compcur = getSubCom(com, n, &i);
-	
-	if (i < n)
-		compcur = NULL;
-	matches = rl_completion_matches(text, my_generator);
-	
 	for (i = 0; com[i] != NULL; i++)
 		free(com[i]);
 	
-	
-	return matches;
+	if (i < n) /* unknown command */
+		return NULL;
+	else if (compcur->sub == NULL) /* terminal command */
+		return rl_completion_matches(text, rl_filename_completion_function);
+	else /* intermediate command */
+		return rl_completion_matches(text, my_generator);
 }
 #endif /* HAVE_LIBREADLINE */
 
