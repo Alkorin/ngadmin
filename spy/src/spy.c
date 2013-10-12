@@ -10,6 +10,76 @@
 #include <nsdp/net.h>
 
 
+static const char* code_str (unsigned char code)
+{
+	switch (code) {
+	
+	case CODE_READ_REQ:
+		return "read request";
+	
+	case CODE_READ_REP:
+		return "read reply";
+	
+	case CODE_WRITE_REQ:
+		return "write request";
+	
+	case CODE_WRITE_REP:
+		return "write reply";
+	
+	default:
+		return "unknown";
+	}
+}
+
+
+static const char* error_str (unsigned char err)
+{
+	switch (err) {
+	
+	case 0:
+		return "none";
+	
+	case ERROR_READONLY:
+		return "read only";
+	
+	case ERROR_INVALID_VALUE:
+		return "invalid value";
+	
+	case ERROR_DENIED:
+		return "access denied";
+	
+	default:
+		return "unknown";
+	}
+}
+
+
+static void print_packet (const List *attr, const struct nsdp_cmd *nc)
+{
+	const ListNode *ln;
+	const struct attr *at;
+	
+	
+	printf("---------------------------------\n");
+	printf("code = %s (%u)\n", code_str(nc->code), nc->code);
+	printf("error = %s (%u)\n", error_str(nc->error), nc->error);
+	if (nc->attr_error != 0)
+		printf("erroneous attribute = %04X\n", nc->attr_error);
+	printf("source address = %s:%u\n", inet_ntoa(nc->remote_addr.sin_addr), ntohs(nc->remote_addr.sin_port));
+	printf("client MAC = %s\n", ether_ntoa(&nc->client_mac));
+	printf("switch MAC = %s\n", ether_ntoa(&nc->switch_mac));
+	printf("sequence number = %u\n\n", nc->seqnum);
+	printf("received %d attribute(s)\n", attr->count);
+	
+	for (ln = attr->first; ln != NULL; ln = ln->next) {
+		at = ln->data;
+		printf("received attribute code = %04X, length = %d\n", at->attr, at->size);
+	}
+	
+	printf("---------------------------------\n\n");
+}
+
+
 static void handler (int sig)
 {
 	(void)sig;
@@ -21,8 +91,6 @@ int main (void)
 {
 	int err = 0, sw_sock = -1, cl_sock = -1;
 	List *attr;
-	ListNode *ln;
-	struct attr *at;
 	struct nsdp_cmd nc;
 	struct sockaddr_in sw_local, cl_local;
 	struct pollfd fds[2];
@@ -101,18 +169,9 @@ int main (void)
 		if (err < 0)
 			continue;
 		
-		printf("---------------------------------\n");
-		
-		printf("received %d attribute(s)\n", attr->count);
-		
-		for (ln = attr->first; ln != NULL; ln = ln->next) {
-			at = ln->data;
-			printf("received attribute code = %04X, length = %d\n", at->attr, at->size);
-		}
+		print_packet(attr, &nc);
 		
 		clearList(attr, (void(*)(void*))freeAttr);
-		
-		printf("---------------------------------\n\n");
 	}
 	
 	destroyList(attr, (void(*)(void*))freeAttr);

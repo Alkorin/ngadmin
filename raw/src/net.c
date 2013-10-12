@@ -138,15 +138,11 @@ int recvNsdpPacket (int sock, struct nsdp_cmd *nc, List *attr, const struct time
 		if ((nc->remote_addr.sin_addr.s_addr != 0 && remote.sin_addr.s_addr != nc->remote_addr.sin_addr.s_addr) ||
 		    (nc->remote_addr.sin_port != 0 && remote.sin_port != nc->remote_addr.sin_port) ||
 		    len < (int)sizeof(struct nsdp_header) ||
-		    !validateNsdpHeader(np.nh, nc) ||
+		    !extractNsdpHeader(np.nh, nc) ||
 		    extractPacketAttributes(&np, attr, nc->ports) < 0)
 			continue;
 		
 		nc->remote_addr = remote;
-		
-		nc->code = np.nh->code;
-		nc->error = np.nh->error;
-		nc->attr_error = ntohs(np.nh->attr);
 		
 		len = 0;
 		break;

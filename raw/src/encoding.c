@@ -24,7 +24,7 @@ void initNsdpHeader (struct nsdp_header *nh, const struct nsdp_cmd *nc)
 }
 
 
-bool validateNsdpHeader (const struct nsdp_header *nh, const struct nsdp_cmd *nc)
+bool extractNsdpHeader (const struct nsdp_header *nh, struct nsdp_cmd *nc)
 {
 	unsigned int i;
 	
@@ -34,6 +34,10 @@ bool validateNsdpHeader (const struct nsdp_header *nh, const struct nsdp_cmd *nc
 	
 	if (nc->code > 0 && nh->code != nc->code)
 		return false;
+	nc->code = nh->code;
+	
+	nc->error = nh->error;
+	nc->attr_error = ntohs(nh->attr);
 	
 	if (nh->unk1 != 0)
 		return false;
@@ -44,13 +48,16 @@ bool validateNsdpHeader (const struct nsdp_header *nh, const struct nsdp_cmd *nc
 	for (i = 0; i < ETH_ALEN && nc->client_mac.ether_addr_octet[i] == 0; i++);
 	if (i < ETH_ALEN && memcmp(nh->client_mac, &nc->client_mac, ETH_ALEN) != 0)
 		return false;
+	memcpy(&nc->client_mac, nh->client_mac, ETH_ALEN);
 	
 	for (i = 0; i < ETH_ALEN && nc->switch_mac.ether_addr_octet[i] == 0; i++);
 	if (i < ETH_ALEN && memcmp(nh->switch_mac, &nc->switch_mac, ETH_ALEN) != 0)
 		return false;
+	memcpy(&nc->switch_mac, nh->switch_mac, ETH_ALEN);
 	
 	if (nc->seqnum > 0 && ntohl(nh->seqnum) != nc->seqnum)
 		return false;
+	nc->seqnum = ntohl(nh->seqnum);
 	
 	if (memcmp(nh->proto_id, NSDP_PROTOID, 4) != 0)
 		return false;

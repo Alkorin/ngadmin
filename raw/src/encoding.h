@@ -26,7 +26,7 @@ struct nsdp_packet {
 void initNsdpHeader (struct nsdp_header *nh, const struct nsdp_cmd *nc);
 
 
-bool validateNsdpHeader (const struct nsdp_header *nh, const struct nsdp_cmd *nc);
+bool extractNsdpHeader (const struct nsdp_header *nh, struct nsdp_cmd *nc);
 
 
 static inline void initNsdpPacket (struct nsdp_packet *np)
