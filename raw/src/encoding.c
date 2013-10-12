@@ -3,7 +3,7 @@
 #include <errno.h>
 
 #include <nsdp/attr.h>
-#include "encoding.h"
+#include <nsdp/encoding.h>
 #include "encoding_attr.h"
 
 

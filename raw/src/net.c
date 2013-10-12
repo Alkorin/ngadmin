@@ -8,7 +8,7 @@
 #include <poll.h>
 
 #include <nsdp/net.h>
-#include "encoding.h"
+#include <nsdp/encoding.h>
 
 
 static inline void timespec_add (struct timespec *tsa, const struct timespec *tsb)
