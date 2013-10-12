@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = raw lib cli
+SUBDIRS = raw lib cli wireshark
 
 if ENABLE_SPY
 SUBDIRS += spy

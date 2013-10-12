@@ -107,6 +107,7 @@ AC_CONFIG_FILES([
 	raw/include/nsdp/Makefile
 	raw/src/Makefile
 	lib/Makefile
+	lib/doxyfile
 	lib/include/Makefile
 	lib/src/Makefile
 	lib/src/libngadmin.pc
@@ -119,7 +120,7 @@ AC_CONFIG_FILES([
 	emu/Makefile
 	emu/man/Makefile
 	emu/src/Makefile
-	lib/doxyfile
+	wireshark/Makefile
 ])
 
 AC_OUTPUT
