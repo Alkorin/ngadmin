@@ -19,50 +19,55 @@ LT_INIT
 
 # enable/disable readline
 AC_ARG_WITH([readline],
-	[AS_HELP_STRING([--with-readline], [support fancy command line editing @<:@default=check@:>@])],
-	[with_readline="$withval"], [with_readline=yes])
+	[AS_HELP_STRING([--with-readline], [support fancy command line editing @<:@default=yes@:>@])],
+	[], [with_readline=yes])
 
-# enable debug build
+# enable/disable debug build
 AC_ARG_ENABLE(debug,
 	[AS_HELP_STRING([--enable-debug], [enable debug mode [default=no]])],
-	[enable_debug=yes], [enable_debug=no])
+	[], [enable_debug=no])
 
 # enable/disable documentation generation
 AC_ARG_ENABLE(doc,
 	[AS_HELP_STRING([--enable-doc], [enable documentation generation [default=no]])],
-	[enable_doc=yes], [enable_doc=no])
+	[], [enable_doc=no])
+
+# enable/disable build of NgCli
+AC_ARG_ENABLE(cli,
+	[AS_HELP_STRING([--enable-cli], [enable NgCli [default=yes]])],
+	[], [enable_cli=yes])
+AM_CONDITIONAL(ENABLE_CLI, test x$enable_cli = xyes)
+if test x$enable_cli != xyes; then
+	with_readline="no"
+fi
 
 # enable/disable build of NgSpy
 AC_ARG_ENABLE(spy,
 	[AS_HELP_STRING([--enable-spy], [enable NgSpy [default=no]])],
-	[enable_spy=yes], [enable_spy=no])
+	[], [enable_spy=no])
 AM_CONDITIONAL(ENABLE_SPY, test x$enable_spy = xyes)
 
 # enable/disable build of NgEmu
 AC_ARG_ENABLE(emu,
 	[AS_HELP_STRING([--enable-emu], [enable NgEmu [default=no]])],
-	[enable_emu=yes], [enable_emu=no])
+	[], [enable_emu=no])
 AM_CONDITIONAL(ENABLE_EMU, test x$enable_emu = xyes)
 
+# tell if libngadmin build is required
+if test x$enable_cli != xyes; then
+	require_lib="no"
+else
+	require_lib="yes"
+fi
 
-
-AS_IF([test "x${enable_doc}" = "xyes"], [
-	AC_CHECK_PROGS([DOXYGEN], [doxygen])
-	AS_IF([test -z "$DOXYGEN"], [
-		AC_MSG_ERROR([Doxygen not found])
-	])
+# enable/disable build of libngadmin
+AC_ARG_ENABLE(lib,
+	[AS_HELP_STRING([--enable-lib], [enable libngadmin [default=yes]])],
+	[], [enable_lib=yes])
+AS_IF([test x$require_lib = xyes -a x$enable_lib = xno], [
+	AC_MSG_FAILURE([libngadmin build disabled but required])
 ])
-AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
-
-
-AS_IF([test "x${with_readline}" != "xno"], [
-	AC_CHECK_LIB([readline], [readline], [
-		AC_SUBST([READLINE_LIBS], [-lreadline])
-		AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
-	], [
-		AC_MSG_FAILURE([readline test failed (--without-readline to disable)])
-	])
-])
+AM_CONDITIONAL(ENABLE_LIB, test x$enable_lib = xyes)
 
 
 
@@ -88,6 +93,7 @@ AC_TYPE_SIZE_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([inet_ntoa memchr memset socket poll strcasecmp strdup strtol strtoul])
 
+# check for clock_gettime
 AC_CHECK_FUNC([clock_gettime], [
 	AC_DEFINE([HAVE_CLOCK_GETTIME], [1], [Define if you have clock_gettime])
 ], [
@@ -98,6 +104,26 @@ AC_CHECK_FUNC([clock_gettime], [
 		AC_CHECK_FUNCS([gettimeofday])
 	])
 ])
+
+# check for doxygen
+AS_IF([test x$enable_doc = xyes], [
+	AC_CHECK_PROGS([DOXYGEN], [doxygen])
+	AS_IF([test -z "$DOXYGEN"], [
+		AC_MSG_ERROR([Doxygen not found])
+	])
+])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+
+# check for libreadline
+AS_IF([test x$with_readline != xno], [
+	AC_CHECK_LIB([readline], [readline], [
+		AC_SUBST([READLINE_LIBS], [-lreadline])
+		AC_DEFINE([HAVE_LIBREADLINE], [1], [Define if you have libreadline])
+	], [
+		AC_MSG_FAILURE([readline test failed (--without-readline to disable)])
+	])
+])
+
 
 
 AC_CONFIG_FILES([
@@ -133,8 +159,9 @@ Debug..............: ${enable_debug}
 Doc................: ${enable_doc}
 Compiler...........: ${CC} ${CFLAGS} ${CPPFLAGS}
 Readline support...: ${with_readline}
+Lib................: ${enable_lib}
+Cli................: ${enable_cli}
 Spy................: ${enable_spy}
 Emulator...........: ${enable_emu}
 "
-
 
