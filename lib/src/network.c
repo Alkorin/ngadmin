@@ -116,22 +116,20 @@ int forceInterface (struct ngadmin *nga)
 	int ret;
 	
 	
-	/*
-	As described bellow, when you have multiple interfaces, this forces the packet 
-	to go to a particular interface. 
-	*/
+	/* as described bellow, when you have multiple interfaces, this
+	 * forces the packet to go to a particular interface
+	 */
 	ret = setsockopt(nga->sock, SOL_SOCKET, SO_BINDTODEVICE, nga->iface, strlen(nga->iface) + 1);
 	if (ret < 0) {
 		perror("setsockopt(SO_BINDTODEVICE)");
 		return ret;
 	}
 	
-	/*
-	If the switch's IP is not in your network range, for instance because you do 
-	not have DHCP  enabled or you started the switch after it, this allows to 
-	bypass the routing tables and consider every address is directly reachable on 
-	the interface. 
-	*/
+	/* if the switch's IP is not in your network range, for instance
+	 * because you do not have DHCP  enabled or you started the switch
+	 * after your DHCP server, this allows to bypass the routing tables
+	 * and consider every address is directly reachable on the interface
+	 */
 	ret = 1;
 	ret = setsockopt(nga->sock, SOL_SOCKET, SO_DONTROUTE, &ret, sizeof(ret));
 	if (ret <0) {
@@ -169,10 +167,8 @@ void prepareSend (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code)
 	memcpy(&nc->client_mac, &nga->localmac, ETH_ALEN);
 	nc->remote_addr.sin_family = AF_INET;
 	nc->remote_addr.sin_port = htons(SWITCH_PORT);
-	if (sa != NULL) {
+	if (sa != NULL)
 		memcpy(&nc->switch_mac, &sa->mac, ETH_ALEN);
-		nc->ports = sa->ports;
-	}
 	
 	/* destination address selection */
 	if (sa != NULL && !nga->keepbroad)
@@ -196,10 +192,8 @@ void prepareRecv (struct ngadmin *nga, struct nsdp_cmd *nc, unsigned char code)
 	memcpy(&nc->client_mac, &nga->localmac, ETH_ALEN);
 	nc->remote_addr.sin_family = AF_INET;
 	nc->remote_addr.sin_port = htons(SWITCH_PORT);
-	if (sa != NULL) {
+	if (sa != NULL)
 		memcpy(&nc->switch_mac, &sa->mac, ETH_ALEN);
-		nc->ports = sa->ports;
-	}
 	
 	/* set filter on switch IP */
 	if (sa == NULL)
@@ -287,7 +281,8 @@ int writeRequest (struct ngadmin *nga, List *attr)
 	i = sendNsdpPacket(nga->sock, &nc, attr);
 	
 	/* the list will be filled again by recvNgPacket
-	but normally it will be still empty */
+	 * but normally it will be still empty
+	 */
 	clearList(attr, (void(*)(void*))freeAttr);
 	
 	if (i >= 0) {

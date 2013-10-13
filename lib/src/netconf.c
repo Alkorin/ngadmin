@@ -21,15 +21,15 @@ int ngadmin_getIGMPConf (struct ngadmin *nga, struct igmp_conf *ic)
 	else if (nga->current == NULL)
 		return ERR_NOTLOG;
 	
-	/*
-	ATTR_IGMP_ENABLE_VLAN
-	ATTR_IGMP_BLOCK_UNK
-	ATTR_IGMP_VALID_V3
-	
-	Apparently, read-querying these attributes at the same time causes the switch to reply garbage. 
-	Here we are forced to do like the official win app and send a separate request for each attribute. 
-	*/
-	
+	/* ATTR_IGMP_ENABLE_VLAN
+	 * ATTR_IGMP_BLOCK_UNK
+	 * ATTR_IGMP_VALID_V3
+	 *
+	 * apparently, read-querying these attributes at the same time causes
+	 * the switch to reply garbage
+	 * here we are forced to do like the official win app and send a
+	 * separate request for each attribute
+	 */
 	
 	attr = createEmptyList();
 	memset(ic, 0, sizeof(struct igmp_conf));

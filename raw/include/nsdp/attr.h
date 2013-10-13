@@ -73,5 +73,11 @@ void freeAttr (struct attr *at);
 void filterAttributes (List *attr, ...);
 
 
+int encodeAttr (struct attr *at);
+
+
+int decodeAttr (struct attr *at);
+
+
 #endif
 

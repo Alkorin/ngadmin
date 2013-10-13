@@ -15,13 +15,15 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports)
 	struct attr *at;
 	int ret = ERR_OK;
 	struct attr_port_status *ps;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || ports == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
-		return ERR_NOTLOG;
 	
+	sa = nga->current;
+	if (sa == NULL)
+		return ERR_NOTLOG;
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_PORT_STATUS));
@@ -31,12 +33,13 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports)
 	
 	filterAttributes(attr, ATTR_PORT_STATUS, ATTR_END);
 	
-	memset(ports, SPEED_UNK, nga->current->ports);
+	memset(ports, SPEED_UNK, sa->ports);
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		ps = at->data;
-		ports[ps->port - 1] = ps->status;
+		if (ps->port <= sa->ports)
+			ports[ps->port - 1] = ps->status;
 	}
 	
 end:
@@ -47,7 +50,6 @@ end:
 }
 
 
-
 int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps)
 {
 	List *attr;
@@ -55,11 +57,14 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps)
 	struct attr *at;
 	int ret = ERR_OK;
 	struct attr_port_stat *aps;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || ps == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
+	
+	sa = nga->current;
+	if (sa == NULL)
 		return ERR_NOTLOG;
 	
 	attr = createEmptyList();
@@ -70,14 +75,16 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps)
 	
 	filterAttributes(attr, ATTR_PORT_STATISTICS, ATTR_END);
 	
-	memset(ps, 0, nga->current->ports * sizeof(struct port_stats));
+	memset(ps, 0, sa->ports * sizeof(struct port_stats));
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		aps = at->data;
-		ps[aps->port -1].recv = aps->recv;
-		ps[aps->port -1].sent = aps->sent;
-		ps[aps->port -1].crc = aps->crc;
+		if (aps->port <= sa->ports) {
+			ps[aps->port -1].recv = aps->recv;
+			ps[aps->port -1].sent = aps->sent;
+			ps[aps->port -1].crc = aps->crc;
+		}
 	}
 	
 end:
@@ -99,7 +106,6 @@ int ngadmin_resetPortsStatistics (struct ngadmin *nga)
 	
 	return writeRequest(nga, attr);
 }
-
 
 
 int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb)

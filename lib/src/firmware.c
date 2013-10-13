@@ -15,12 +15,11 @@ int ngadmin_upgradeFirmware (struct ngadmin *nga, const char *filename)
 	else if (nga->current == NULL)
 		return ERR_NOTLOG;
 	
-	/*
-	Firmware upgrade is not yet implemented. 
-	This would require much more work and the use of a TFTP client. 
-	Overall, it could be quite dangerous, as the switch may not check the binary 
-	content sent to it. 
-	*/
+	/* firmware upgrade is not yet implemented
+	 * this would require much more work and the use of a TFTP client
+	 * overall, it could be quite dangerous, as the switch may not check
+	 * the binary content sent to it
+	 */
 	
 	return ERR_NOTIMPL;
 }

@@ -8,7 +8,7 @@
 #include <poll.h>
 
 #include <nsdp/net.h>
-#include <nsdp/encoding.h>
+#include <nsdp/packet.h>
 
 
 static inline void timespec_add (struct timespec *tsa, const struct timespec *tsb)
@@ -57,7 +57,7 @@ int sendNsdpPacket (int sock, const struct nsdp_cmd *nc, const List *attr)
 	initNsdpPacket(&np);
 	initNsdpHeader(np.nh, nc);
 	
-	ret = addPacketAttributes(&np, attr, nc->ports);
+	ret = addPacketAttributes(&np, attr);
 	if (ret < 0)
 		return ret;
 	
@@ -139,7 +139,7 @@ int recvNsdpPacket (int sock, struct nsdp_cmd *nc, List *attr, const struct time
 		    (nc->remote_addr.sin_port != 0 && remote.sin_port != nc->remote_addr.sin_port) ||
 		    len < (int)sizeof(struct nsdp_header) ||
 		    !extractNsdpHeader(np.nh, nc) ||
-		    extractPacketAttributes(&np, attr, nc->ports) < 0)
+		    extractPacketAttributes(&np, attr) < 0)
 			continue;
 		
 		nc->remote_addr = remote;

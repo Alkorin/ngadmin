@@ -147,14 +147,23 @@ struct attr_cabletest_result {
 } __attribute__((packed));
 
 
-/**
- * Note: this structure is not sent "as-is" on the wire.
+/* Note: this structure is not sent "as-is" on the wire.
  * A translation is done between the wire format (which uses somewhat not
- * trivial bitmap) and this simpler format. See encoding_attr.c for more details.
+ * trivial bitmap) and this simpler format. See attr.c for more details.
  */
 struct attr_vlan_conf {
-	unsigned short vlan;		/* port number */
-	unsigned char ports[0];		/* array, maps each port to a VLAN */
+	unsigned short vlan;		/* VLAN number */
+	unsigned char ports[0];		/* array, maps each port association with the VLAN */
+};
+
+
+/* Note: this structure is not sent "as-is" on the wire.
+ * A translation is done between the wire format (which uses somewhat not
+ * trivial bitmap) and this simpler format. See attr.c for more details.
+ */
+struct attr_mirror {
+	unsigned char outport;		/* port number on which traffic is sent */
+	unsigned char ports[0];		/* array, maps each port source mirror traffic */
 };
 
 

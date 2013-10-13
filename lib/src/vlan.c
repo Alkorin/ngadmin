@@ -103,7 +103,7 @@ int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports)
 		at = ln->data;
 		avc = at->data;
 
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
 			ret = ERR_INVARG;
 			goto end;
 		}
@@ -167,7 +167,7 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
 		at = ln->data;
 		avc_old = at->data;
 		
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
 			ret = ERR_INVARG;
 			free(avc_new);
 			goto end;
@@ -252,7 +252,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 		at = ln->data;
 		avc = at->data;
 		
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
 			ret = ERR_INVARG;
 			goto end;
 		}
@@ -313,7 +313,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 		at = ln->data;
 		avc = at->data;
 		
-		if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
 			ret = ERR_INVARG;
 			goto end;
 		}
@@ -379,7 +379,7 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 			goto end;
 		} else {
 			at = attr->first->data;
-			if (at->size != sizeof(struct attr_vlan_conf) + sa->ports) {
+			if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
 				ret = ERR_INVARG;
 				goto end;
 			}
@@ -436,11 +436,14 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports)
 	struct attr *at;
 	int ret = ERR_OK;
 	struct attr_pvid *ap;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || ports == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
+	
+	sa = nga->current;
+	if (sa == NULL)
 		return ERR_NOTLOG;
 	
 	
@@ -452,12 +455,13 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports)
 	
 	filterAttributes(attr, ATTR_VLAN_PVID, ATTR_END);
 	
-	memset(ports, 0, nga->current->ports * sizeof(unsigned short));
+	memset(ports, 0, sa->ports * sizeof(unsigned short));
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		ap = at->data;
-		ports[ap->port - 1] = ap->vlan;
+		if (ap->port <= sa->ports)
+			ports[ap->port - 1] = ap->vlan;
 	}
 	
 	

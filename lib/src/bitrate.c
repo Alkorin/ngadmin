@@ -65,11 +65,14 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports)
 	struct attr *at;
 	int ret = ERR_OK, port;
 	struct attr_bitrate *sb;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || ports == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
+	
+	sa = nga->current;
+	if (sa == NULL)
 		return ERR_NOTLOG;
 	
 	
@@ -81,13 +84,14 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports)
 	
 	filterAttributes(attr, ATTR_STORM_BITRATE, ATTR_END);
 	
-	for (port = 0; port < nga->current->ports; port++)
+	for (port = 0; port < sa->ports; port++)
 		ports[port] = BITRATE_UNSPEC;
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		sb = at->data;
-		ports[sb->port - 1] = sb->bitrate;
+		if (sb->port <= sa->ports)
+			ports[sb->port - 1] = sb->bitrate;
 	}
 	
 	
@@ -136,11 +140,14 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports)
 	struct attr *at;
 	int ret = ERR_OK, port;
 	struct attr_bitrate *pb;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || ports == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
+	
+	sa = nga->current;
+	if (sa == NULL)
 		return ERR_NOTLOG;
 	
 	
@@ -151,8 +158,9 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports)
 	if (ret != ERR_OK)
 		goto end;
 	
+	filterAttributes(attr, ATTR_BITRATE_INPUT, ATTR_BITRATE_OUTPUT, ATTR_END);
 	
-	for (port = 0; port < nga->current->ports; port++) {
+	for (port = 0; port < sa->ports; port++) {
 		ports[2 * port + 0] = BITRATE_UNSPEC;
 		ports[2 * port + 1] = BITRATE_UNSPEC;
 	}
@@ -160,9 +168,11 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		pb = at->data;
-		if (at->attr == ATTR_BITRATE_INPUT)
+		if (pb->port > sa->ports)
+			continue;
+		else if (at->attr == ATTR_BITRATE_INPUT)
 			ports[(pb->port - 1) * 2 + 0] = pb->bitrate;
-		else if (at->attr == ATTR_BITRATE_OUTPUT)
+		else
 			ports[(pb->port - 1) * 2 + 1] = pb->bitrate;
 	}
 	

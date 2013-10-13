@@ -16,23 +16,27 @@ int ngadmin_scan (struct ngadmin *nga)
 	List *attr, *swiList;
 	struct swi_attr *sa;
 	struct nsdp_cmd nc;
-	/*
-	sent by official win client:
-	ATTR_PRODUCT,
-	ATTR_UNK2,
-	ATTR_NAME,
-	ATTR_MAC,
-	ATTR_UNK5,
-	ATTR_IP,
-	ATTR_NETMASK,
-	ATTR_GATEWAY,
-	ATTR_DHCP,
-	ATTR_UNK12,
-	ATTR_FIRM_VER,
-	ATTR_UNK14,
-	ATTR_UNK15,
-	ATTR_END
-	*/
+	/* sent by official win client:
+	 * ATTR_PRODUCT
+	 * ATTR_UNK2
+	 * ATTR_NAME
+	 * ATTR_MAC
+	 * ATTR_UNK5
+	 * ATTR_IP
+	 * ATTR_NETMASK
+	 * ATTR_GATEWAY
+	 * ATTR_DHCP
+	 * ATTR_UNK12
+	 * ATTR_FIRM_VER
+	 * ATTR_UNK14
+	 * ATTR_UNK15
+	 * ATTR_END
+	 *
+	 * one may be tempted to add ATTR_ENCPASS so we can now early if the
+	 * switch uses password encryption, but this would cause (at least)
+	 * switches that do not support this feature not to reply to the
+	 * discovery request at all
+	 */
 	static const unsigned short hello[] = {
 		ATTR_PRODUCT,
 		ATTR_NAME,
@@ -137,6 +141,10 @@ int ngadmin_login (struct ngadmin *nga, int id)
 	nga->current = sa;
 	nga->encrypt_pass = false;
 	
+	/* determine if the switch uses password encryption
+	 * as explained in ngadmin_scan, it cannot be done at discovery
+	 * stage
+	 */
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_ENCPASS));
 	ret = readRequest(nga, attr);
@@ -146,19 +154,21 @@ int ngadmin_login (struct ngadmin *nga, int id)
 	filterAttributes(attr, ATTR_ENCPASS, ATTR_END);
 	if (attr->first != NULL) {
 		at = attr->first->data;
-		nga->encrypt_pass = (at->size == 4 && ntohl(*(unsigned int*)at->data) == 1);
+		nga->encrypt_pass = (at->size == 4 && *(unsigned int*)at->data == 1);
 	}
 	clearList(attr, (void(*)(void*))freeAttr);
 	
-	/* Strangely, passwords must never be encrypted inside a read request,
-	 * or it will be rejected. Seems more to be a firmware bug. */
+	/* strangely, passwords must never be encrypted inside a read request,
+	 * or it will be rejected. Seems more to be a firmware bug
+	 */
 	pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
 	ret = readRequest(nga, attr);
 	if (ret == ERR_OK ) {
 		/* login succeeded */
-		/* TODO: if keep broadcasting is disabled, connect() the UDP 
-		socket so icmp errors messages (port unreachable, TTL exceeded 
-		in transit, ...) can be received */
+		/* TODO: if keep broadcasting is disabled, connect() the UDP
+		 * socket so icmp errors messages (port unreachable, TTL exceeded
+		 * in transit, ...) can be received
+		 */
 	} else {
 		/* login failed */
 		nga->current = NULL;

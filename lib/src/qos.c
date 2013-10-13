@@ -65,13 +65,15 @@ int ngadmin_getQOSValues (struct ngadmin *nga, char *ports)
 	struct attr *at;
 	int ret = ERR_OK, port;
 	struct attr_qos *aq;
+	struct swi_attr *sa;
 	
 	
 	if (nga == NULL || ports == NULL)
 		return ERR_INVARG;
-	else if (nga->current == NULL)
-		return ERR_NOTLOG;
 	
+	sa = nga->current;
+	if (sa == NULL)
+		return ERR_NOTLOG;
 	
 	attr = createEmptyList();
 	pushBackList(attr, newEmptyAttr(ATTR_QOS_CONFIG));
@@ -81,13 +83,14 @@ int ngadmin_getQOSValues (struct ngadmin *nga, char *ports)
 	
 	filterAttributes(attr, ATTR_QOS_CONFIG, ATTR_END);
 	
-	for (port = 0; port < nga->current->ports; port++)
+	for (port = 0; port < sa->ports; port++)
 		ports[port] = PRIO_UNSPEC;
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		aq = at->data;
-		ports[aq->port - 1] = aq->prio;
+		if (aq->port <= sa->ports)
+			ports[aq->port - 1] = aq->prio;
 	}
 	
 	

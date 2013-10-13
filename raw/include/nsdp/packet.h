@@ -41,10 +41,10 @@ static inline int getPacketTotalSize (const struct nsdp_packet *np)
 }
 
 
-int addPacketAttributes (struct nsdp_packet *np, const List* attr, unsigned char ports);
+int addPacketAttributes (struct nsdp_packet *np, const List* attr);
 
 
-int extractPacketAttributes (struct nsdp_packet *np, List *attr, unsigned char ports);
+int extractPacketAttributes (struct nsdp_packet *np, List *attr);
 
 
 #endif

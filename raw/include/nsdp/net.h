@@ -15,7 +15,6 @@ struct nsdp_cmd {
 	struct ether_addr switch_mac;
 	struct sockaddr_in remote_addr;
 	unsigned int seqnum;
-	unsigned int ports;
 	unsigned char code;
 	unsigned char error;
 	unsigned short attr_error;

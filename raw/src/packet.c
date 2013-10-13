@@ -3,9 +3,7 @@
 #include <errno.h>
 
 #include <nsdp/attr.h>
-#include <nsdp/encoding.h>
-#include "encoding_attr.h"
-
+#include <nsdp/packet.h>
 
 
 void initNsdpHeader (struct nsdp_header *nh, const struct nsdp_cmd *nc)
@@ -69,29 +67,10 @@ bool extractNsdpHeader (const struct nsdp_header *nh, struct nsdp_cmd *nc)
 }
 
 
-static void addPacketAttr (struct nsdp_packet *np, struct attr *at)
-{
-	struct attr_header *ah = np->ah;
-	
-	
-	if ((int)(getPacketTotalSize(np) + sizeof(struct attr_header) + at->size) > np->maxlen)
-		return;
-	
-	ah->attr = htons(at->attr);
-	ah->size = htons(at->size);
-	
-	if (at->size > 0 && at->data != NULL)
-		memcpy(ah->data, at->data, at->size);
-	
-	np->ah = (struct attr_header*)(ah->data + at->size);
-}
-
-
-int addPacketAttributes (struct nsdp_packet *np, const List* attr, unsigned char ports)
+int addPacketAttributes (struct nsdp_packet *np, const List* attr)
 {
 	ListNode *ln;
 	struct attr *at;
-	const struct attr_handler *ah;
 	
 	
 	if (attr == NULL)
@@ -99,15 +78,25 @@ int addPacketAttributes (struct nsdp_packet *np, const List* attr, unsigned char
 	
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
-		ah = getAttrHandler(at->attr);
-		if (ah != NULL) {
-			if (ah->size > 0 && at->size > 0 && at->size != ah->size)
-				return -EINVAL;
-			if (at->size > 0 && ah->encode != NULL && !ah->encode(at, ports))
-				return -EINVAL;
-		}
 		
-		addPacketAttr(np, at);
+		/* encode attribute data */
+		if (encodeAttr(at) < 0)
+			return -EINVAL;
+		
+		/* attribute data bigger than the remaining size: error */
+		if ((int)(getPacketTotalSize(np) + sizeof(struct attr_header) + at->size) > np->maxlen)
+			return -EMSGSIZE;
+		
+		/* set attribute code and size */
+		np->ah->attr = htons(at->attr);
+		np->ah->size = htons(at->size);
+		
+		/* copy attribute data */
+		if (at->size > 0 && at->data != NULL)
+			memcpy(np->ah->data, at->data, at->size);
+		
+		/* move to next attribute */
+		np->ah = (struct attr_header*)(np->ah->data + at->size);
 	}
 	
 	
@@ -115,35 +104,27 @@ int addPacketAttributes (struct nsdp_packet *np, const List* attr, unsigned char
 }
 
 
-int extractPacketAttributes (struct nsdp_packet *np, List *attr, unsigned char ports)
+int extractPacketAttributes (struct nsdp_packet *np, List *attr)
 {
 	struct attr *at;
-	const struct attr_handler *ah;
-	int ret = 0;
 	unsigned short size;
-	bool valid;
 	
 	
 	while (getPacketTotalSize(np) < np->maxlen) {
 		/* no room for an attribute header: error */
-		if (getPacketTotalSize(np) + (int)sizeof(struct attr_header) > np->maxlen) {
-			ret = -1;
-			break;
-		}
+		if (getPacketTotalSize(np) + (int)sizeof(struct attr_header) > np->maxlen)
+			return -EMSGSIZE;
 		
 		/* create new attribute */
 		size = ntohs(np->ah->size);
 		at = newAttr(ntohs(np->ah->attr), size, NULL);
-		if (at == NULL) {
-			ret = -1;
-			break;
-		}
+		if (at == NULL)
+			return -ENOMEM;
 		
 		/* attribute data bigger than the remaining size: error */
 		if (getPacketTotalSize(np) + (int)sizeof(struct attr_header) + size > np->maxlen) {
 			free(at);
-			ret = -1;
-			break;
+			return -EMSGSIZE;
 		}
 		
 		/* copy attribute raw data */
@@ -155,38 +136,24 @@ int extractPacketAttributes (struct nsdp_packet *np, List *attr, unsigned char p
 		}
 		
 		/* decode attribute data */
-		valid = true;
-		
-		ah = getAttrHandler(at->attr);
-		if (at->data == NULL || ah == NULL)
-			goto next;
-		
-		if (ah->size > 0 && size != ah->size) {
-			valid = false;
-			goto next;
-		}
-		
-		if (ah->decode != NULL)
-			valid = ah->decode(at, ports);
-		
-next:
-		/* stop on an END attribute */
-		if (at->attr == ATTR_END) {
+		if(decodeAttr(at) == 0) {
+			/* stop on an END attribute */
+			if (at->attr == ATTR_END) {
+				free(at);
+				break;
+			} else {
+				pushBackList(attr, at);
+			}
+		} else {
 			free(at);
-			break;
 		}
 		
 		/* move to next attribute */
 		np->ah = (struct attr_header*)(np->ah->data + size);
-		
-		if (valid)
-			pushBackList(attr, at);
-		else
-			free(at);
 	}
 	
 	
-	return ret;
+	return 0;
 }
 
 
