@@ -1,5 +1,6 @@
 
 bin_PROGRAMS = ngcli
+noinst_HEADERS = commands.h common.h
 
 ngcli_SOURCES = admin.c com_bitrate.c com_cabletest.c com_defaults.c com_firmware.c \
 		com_help.c com_igmp.c com_list.c com_login.c commands.c com_mirror.c \

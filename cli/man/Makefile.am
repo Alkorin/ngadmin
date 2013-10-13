@@ -1,3 +1,3 @@
 
-man_MANS = ngadmin.1
+dist_man_MANS = ngadmin.1
 
