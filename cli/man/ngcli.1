@@ -1,0 +1,362 @@
+.TH NGCLI "1" "October 2013" "NgAdmin 0.1" "User Commands"
+.SH NAME
+ngcli \- command line interface tool for GS10[58]E administration
+.
+.SH SYNOPSIS
+ngcli [\fIOPTIONS\fR]
+.
+.SH DESCRIPTION
+.
+.PP
+This is a cli tool intended for administration of Netgear switches that use
+NSDP. Currently, only the GS105E and GS108E are concerned.
+.br
+It uses the readline library (if enabled at compilation) to read command lines
+and supports command auto-completion with the TAB key.
+.
+.SH OPTIONS
+.
+.TP
+.B "\-a, \-\-batch"
+By default, NgCli uses readline to provide an interactive command line
+interface. You can disable this and use basic text input, which can be useful
+for scripting purposes. You can also see \fB\-m\fR, \fB\-p\fR and \fB\-r\fR
+options.
+.br
+If readline is disabled at compilation time, it is the default and only choice.
+.
+.TP
+.B "\-b, \-\-keep\-broadcasting"
+Keep broadcasting even when talking with a particular switch.
+By default, once you login on a switch, NgAdmin talks with it using unicast.
+This prevents the password from being sent to all your network. The switch
+still replies using broadcast, but the password is not included in the replies.
+.br
+This option allows you to disable this feature and do like the official Windows
+application that always use broadcast packets. This also allows to configure a
+switch which is not on your network range without forcing the interface.
+.br
+When you enable this option, you must be aware that on every modification
+you make, your password is broadcasted to all your network.
+.
+.TP
+.B "\-f, \-\-force\-interface"
+Force traffic to go through the specified interface. This can be useful when
+you have multiple interfaces or the switch is not on your network range.
+.br
+Requires root privileges.
+.
+.TP
+.B "\-h, \-\-help"
+Show basic help instructions.
+.
+.TP
+\fB\-i, \-\-interface\fI iface
+Set the interface to use to \fIiface\fR. Defaults to eth0 when not specified.
+However, this does not force the traffic to go through this interface.
+If you have multiple interfaces, you can use \fB\-l\fR or \fB\-f\fR options.
+.
+.TP
+.B "\-l, \-\-local\-broadcast"
+By default, NgCli uses the global broadcast address (255.255.255.255) to send
+data to all the network. With this option, the interface broadcast address will
+be used instead (for example 192.168.1.255). This can be useful to force
+traffic to go through the specified interface without forcing the interface.
+.br
+However, some switches seem to ignore packets sent to this type of addresses.
+.
+.TP
+\fB\-m, \-\-mac\fI mac
+Enable automatic login. NgCli will automatically scan the network and try to
+login on the switch with the MAC address \fImac\fR. \fImac\fR must be specified
+as six hexadecimal bytes separated by a colon.
+.
+.TP
+\fB\-p, \-\-password\fI password
+Set the password to use with automatic login to \fIpassword\fR. Be aware that
+the password will be part of the command line, which means everybody on the
+machine can do a "ps" to see it.
+.
+.TP
+\fB\-r, \-\-retries\fI count
+Set the maximum scan and login attempts in automatic login mode to \fIcount\fR.
+Defaults to 3 when not specified and 0 means unlimited attempts.
+.
+.TP
+\fB\-t, \-\-timeout\fI value
+Define the maximum to wait for switch replies in \fIvalue\fR milliseconds.
+Defaults to 4 seconds when not specified.
+.
+.
+.SH COMMANDS
+.
+.TP
+\fBbitrate set\fR [ all [ inout \fIspeed\fR ] [ in \fIspeed\fR ] \
+[ out \fIspeed\fR ] ] [ \fIport\fR [ inout \fIspeed\fR ] [ in \fIspeed\fR ] \
+[ out \fIspeed\fR ]  ] [...]
+Set the bitrate limit on several several \fIport\fR. Setting the first port to
+"all" assigns the same value to all the ports.
+.br
+Acceptable \fIspeed\fR values are:
+nl (no limit), 512K, 1M, 2M, 4M, 8M, 16M, 32M, 64M, 128M, 256M, 512M
+.
+.TP
+\fBbitrate show
+Show bitrate limitation configuration.
+.
+.TP
+\fBcabletest\fI port\fR [...]
+Perform a cable test on one or several \fIport\fR.
+.
+.TP
+\fBdefaults
+Reset the switch to the defaults parameters. Automatically delogs from the
+current switch.
+.
+.TP
+\fBfirmware show
+Show the current firmware version.
+.
+.TP
+\fBfirmware upgrade\fI file
+Upgrade the firmware contained in the \fIfile\fR.
+.
+.TP
+\fBhelp
+Display all the commands.
+.
+.TP
+\fBigmp set \fIenable vlan validate block
+Set IGMP filtering related options. \fIenable\fR, \fIvalidate\fR and
+\fIblock\fR must set either to 0 to disable or 1 to enable. \fIvlan\fR must be
+a VLAN number.
+.br
+\fIenable\fR : enable or disable IGMP filtering
+.br
+\fIvlan\fR : VLAN number on which the filtering is performed
+.br
+\fIvalidate\fR : enable or disable IGMPv3 header validation
+.br
+\fIblock\fR : enable or disable blocking of unknown addresses
+.
+.TP
+\fBigmp show
+Show IGMP filtering configuration.
+.
+.TP
+\fBlist
+List the detected switches on the network.
+.
+.TP
+\fBlogin \fIid
+Login on switch with ID \fIid\fR. The \fBlist\fR command shows IDs of detected
+switches. This command delogs from the current switch, whether the login
+attempt is successful or not.
+.
+.TP
+\fBmirror disable
+Disable port mirroring.
+.
+.TP
+\fBmirror set\fI outport\fR clone\fI port\fR [...]
+Enable port mirroring, copy data from one or several \fIport\fR and output
+data on \fIoutport\fR. Obviously, \fIoutport\fR must not be in the source ports
+list.
+.
+.TP
+\fBmirror show
+Show port mirroring configuration.
+.
+.TP
+\fBname clear
+Clear the switch name.
+.
+.TP
+\fBname set\fI name
+Set the switch name to \fIname\fR.
+.
+.TP
+\fBname show
+Show the switch name.
+.
+.TP
+\fBnetconf set\fR [ dhcp yes|no ] [ ip \fIip\fR ] [ mask\fI mask\fR ] \
+[ gw\fI gw\fR ]
+Set various network related options. \fIip\fR, \fImask\fR and \fIgw\fR must be
+IPv4 addresses in dotted quad form.
+.br
+dhcp : enable or disable DHCP client on the switch
+.br
+ip : set the switch IP to \fIip\fR
+.br
+mask : set the switch netmask to \fImask\fR
+.br
+gw : set the switch gateway to \fIgw\fR
+.
+.TP
+\fBpassword change\fI password
+Change the switch password to \fIpassword\fR.
+.
+.TP
+\fBpassword set\fR [ \fIpassword\fR ]
+Set the password used to connect to \fIpassword\fR. If not specified, it is
+asked from user (with terminal echo disabled).
+.
+.TP
+\fBports state
+Show the ports state and speed.
+.
+.TP
+\fBports statistics reset
+Reset the ports statistics.
+.
+.TP
+\fBports statistics show
+Show the ports statistics.
+.
+.TP
+\fBqos mode\fR port|802.1p
+Set QoS mode to either port based or 802.1p based.
+.
+.TP
+\fBqos set\fR all\fI prio
+In port based mode, set all ports priority to \fIprio\fR.
+.br
+Acceptable values for \fIprio\fR are high, medium, normal and low.
+.
+.TP
+\fBqos set \fIport prio\fR [...]
+In port based mode, set priority of several couples of \fIport\fR to \fIprio\fR.
+\fIprio\fR is the same format as in the above command.
+.
+.TP
+\fBqos show
+Show QoS configuration.
+.
+.TP
+\fBquit
+Exit NgCli.
+.
+.TP
+\fBrestart
+Restart the switch.
+.
+.TP
+\fBscan
+Scan the network for switches.
+.
+.TP
+\fBstormfilter enable
+Enable storm filtering.
+.
+.TP
+\fBstormfilter disable
+Disable storm filtering.
+.
+.TP
+\fBstormfilter set\fR all\fI speed
+Set the storm filter bitrate of all ports to \fIspeed\fR. \fIspeed\fR is the
+same format as in the \fBbitrate set\fR command.
+.
+.TP
+\fBstormfilter set\fI port speed\fR [...]
+Set the storm filter bitrate of several couples of \fIport\fR to \fIspeed\fR.
+\fIspeed\fR is the same format as in the \fBbitrate set\fR command.
+.
+.TP
+\fBstormfilter show
+Show storm filtering configuration.
+.
+.TP
+\fBtree
+Display all the commands and their subcommands.
+.
+.TP
+\fBvlan 802.1q del\fI vlan
+Delete 802.1Q VLAN \fIvlan\fR.
+.
+.TP
+\fBvlan 802.1q set\fI vlan\fR [ all unspec|no|untagged|tagged ] \
+[ \fIport\fR unspec|no|untagged|tagged ] [...]
+In 802.1Q based mode, set a particular VLAN membership of several \fIport\fR.
+\fIvlan\fR is a VLAN number between 1 and 4093 inclusive.
+Setting the port of the first couple to "all" assigns the same value to all the
+ports.
+.br
+Also do not forget to set the PVID configuration as well with the
+\fBvlan pvid set\fR command.
+.br
+When creating a new VLAN, no port must be in an unspecified state or the VLAN
+creation will fail.
+.br
+Acceptable membership values are:
+.br
+unspec : unspecified (default), the configuration of this port is left unchanged
+.br
+no : the port is not member of this VLAN
+.br
+untagged : the port is member of this VLAN as untagged
+.br
+tagged : the port is member of this VLAN as tagged
+.
+.TP
+\fBvlan 802.1q show
+Show 8021Q based VLAN configuration.
+.
+.TP
+\fBvlan mode set\fI mode
+Set VLAN mode to \fImode\fR, acceptable values are:
+.br
+0 - disabled
+.br
+1 - basic port based
+.br
+2 - advanced port based
+.br
+3 - basic 802.1Q
+.br
+4 - advanced 802.1Q
+.
+.TP
+\fBvlan mode show
+Show VLAN mode.
+.
+.TP
+\fBvlan port set\fR [ all\fI vlan\fR ] [ \fIport vlan\fR ] [...]
+In port based mode, set the VLAN membership of several couples of \fIport\fR to
+\fIvlan\fR. Setting the port of the first couple to "all" assigns the same VLAN
+to all the ports.
+.br
+\fIvlan\fR is a VLAN number between 1 and 9 inclusive.
+.
+.TP
+\fBvlan port show
+Show port based VLAN configuration.
+.
+.TP
+\fBvlan pvid set\fI port vlan
+Set \fIport\fR PVID to \fIvlan\fR.
+.
+.TP
+\fBvlan pvid show
+Show VLAN PVID configuration.
+.
+.SH BUGS
+.
+.PP
+Firmware upgrade is not implemented, because it would require some work in the
+library and a TFTP client.
+.br
+And overvall, it could be dangerous, as it is not sure that the switch checks
+whatever you send to it, which could lead to a bricked device.
+.
+.PP
+Cabletest is not totally reversed, only raw values are shown.
+.br
+Also, you must manually increase timeout to be able to receive results.
+.
+.PP
+Saving and loading whole configuration into/from a file is not implemented.
+.
+.SH AUTHOR
+Written by Hervé Boisse (admin@darkcoven.tk).
