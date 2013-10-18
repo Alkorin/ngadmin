@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_help (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
+int do_help (int argc, const char **argv UNUSED, struct ngadmin *nga UNUSED)
 {
 	const struct TreeNode *s;
 	

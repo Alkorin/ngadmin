@@ -2,7 +2,7 @@
 #include "commands.h"
 
 
-bool do_login (int argc, const char **argv, struct ngadmin *nga)
+int do_login (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i;
 	
