@@ -2,6 +2,34 @@
 #include "commands.h"
 
 
+int do_netconf_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
+{
+	const struct swi_attr *sa;
+	const struct net_conf *nc;
+	
+	
+	if (argc > 0) {
+		printf("this command takes no argument\n");
+		return 1;
+	}
+	
+	sa = ngadmin_getCurrentSwitch(nga);
+	if (sa == NULL) {
+		printf("must be logged\n");
+		return 1;
+	}
+	nc = &sa->nc;
+	
+	printf("DHCP\t : %s\n", nc->dhcp ? "yes" : "no");
+	printf("IP\t : %s\n", inet_ntoa(nc->ip));
+	printf("Netmask\t : %s\n", inet_ntoa(nc->netmask));
+	printf("Gateway\t : %s\n", inet_ntoa(nc->gw));
+	
+	
+	return 0;
+}
+
+
 int do_netconf_set (int argc, const char **argv, struct ngadmin *nga)
 {
 	int i, k, ret = 0;

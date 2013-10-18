@@ -50,6 +50,7 @@ int do_name_clear (int argc, const char **argv, struct ngadmin *nga);
 
 
 /* netconf */
+int do_netconf_show (int argc, const char **argv, struct ngadmin *nga);
 int do_netconf_set (int argc, const char **argv, struct ngadmin *nga);
 
 
@@ -145,6 +146,7 @@ COM_ROOT_START(commands)
 	COM_END
 	
 	COM_START(netconf)
+		COM_TERM(show, do_netconf_show)
 		COM_TERM(set, do_netconf_set)
 	COM_END
 	
