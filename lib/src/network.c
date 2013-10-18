@@ -146,6 +146,9 @@ static int checkErrorCode (const struct nsdp_cmd *nc)
 {
 	switch (nc->error) {
 	
+	case 0:
+		return ERR_OK;
+	
 	case ERROR_DENIED:
 		return (nc->attr_error == ATTR_PASSWORD) ? ERR_BADPASS : ERR_DENIED;
 	
@@ -153,7 +156,7 @@ static int checkErrorCode (const struct nsdp_cmd *nc)
 		return ERR_INVARG;
 	
 	default:
-		return ERR_OK;
+		return ERR_UNKNOWN;
 	}
 }
 

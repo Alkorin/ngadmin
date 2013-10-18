@@ -40,6 +40,14 @@ void printErrCode (int err)
 		printf("not implemented\n");
 		break;
 	
+	case ERR_BADREPLY:
+		printf("bad reply from switch\n");
+		break;
+	
+	case ERR_UNKNOWN:
+		printf("unknown error\n");
+		break;
+	
 	default:
 		printf("unknown status code (%i)\n", err);
 	}

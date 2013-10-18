@@ -43,7 +43,7 @@ int ngadmin_getMirror (struct ngadmin *nga, char *ports)
 			memset(ports, 0, 1 + sa->ports);
 		} else if (am->outport > 0 && at->size >= 1 + sa->ports) {
 			if (at->size < sizeof(struct attr_mirror) + sa->ports) {
-				ret = ERR_INVARG;
+				ret = ERR_BADREPLY;
 				goto end;
 			}
 			ports[0] = am->outport;

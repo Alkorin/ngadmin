@@ -32,7 +32,7 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t)
 	*t = VLAN_DISABLED;
 	
 	if (attr->first == NULL) {
-		ret = ERR_INVARG;
+		ret = ERR_BADREPLY;
 		goto end;
 	}
 	at = attr->first->data;
@@ -93,7 +93,7 @@ int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports)
 	filterAttributes(attr, ATTR_VLAN_PORT_CONF, ATTR_END);
 	
 	if (attr->first == NULL) {
-		ret = ERR_INVARG;
+		ret = ERR_BADREPLY;
 		goto end;
 	}
 	
@@ -104,7 +104,7 @@ int ngadmin_getVLANPortConf (struct ngadmin *nga, unsigned char *ports)
 		avc = at->data;
 
 		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
-			ret = ERR_INVARG;
+			ret = ERR_BADREPLY;
 			goto end;
 		}
 		
@@ -155,7 +155,7 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
 	filterAttributes(conf_old, ATTR_VLAN_PORT_CONF, ATTR_END);
 	
 	if (conf_old->first == NULL) {
-		ret = ERR_INVARG;
+		ret = ERR_BADREPLY;
 		goto end;
 	}
 	
@@ -168,7 +168,7 @@ int ngadmin_setVLANPortConf (struct ngadmin *nga, const unsigned char *ports)
 		avc_old = at->data;
 		
 		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
-			ret = ERR_INVARG;
+			ret = ERR_BADREPLY;
 			free(avc_new);
 			goto end;
 		}
@@ -241,7 +241,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
 	if (attr->first == NULL) {
-		ret = ERR_INVARG;
+		ret = ERR_BADREPLY;
 		goto end;
 	}
 	
@@ -253,7 +253,7 @@ int ngadmin_getVLANDotAllConf (struct ngadmin *nga, unsigned short *vlans, unsig
 		avc = at->data;
 		
 		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
-			ret = ERR_INVARG;
+			ret = ERR_BADREPLY;
 			goto end;
 		}
 		
@@ -303,7 +303,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 	filterAttributes(attr, ATTR_VLAN_DOT_CONF, ATTR_END);
 	
 	if (attr->first == NULL) {
-		ret = ERR_INVARG;
+		ret = ERR_BADREPLY;
 		goto end;
 	}
 	
@@ -314,7 +314,7 @@ int ngadmin_getVLANDotConf (struct ngadmin *nga, unsigned short vlan, unsigned c
 		avc = at->data;
 		
 		if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
-			ret = ERR_INVARG;
+			ret = ERR_BADREPLY;
 			goto end;
 		}
 		
@@ -375,12 +375,12 @@ int ngadmin_setVLANDotConf (struct ngadmin *nga, unsigned short vlan, const unsi
 		
 		/* check if the switch is in 802.1Q mode */
 		if (attr->first == NULL) {
-			ret = ERR_INVARG;
+			ret = ERR_BADREPLY;
 			goto end;
 		} else {
 			at = attr->first->data;
 			if (at->size < sizeof(struct attr_vlan_conf) + sa->ports) {
-				ret = ERR_INVARG;
+				ret = ERR_BADREPLY;
 				goto end;
 			}
 		}
