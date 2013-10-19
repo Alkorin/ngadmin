@@ -36,6 +36,10 @@ int ngadmin_getVLANType (struct ngadmin *nga, int *t)
 		goto end;
 	}
 	at = attr->first->data;
+	if (at->size != 1) {
+		ret = ERR_BADREPLY;
+		goto end;
+	}
 	*t =(int)*(char*)at->data;
 	
 end:
@@ -460,6 +464,10 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		ap = at->data;
+		if (at->size == 0) {
+			ret = ERR_BADREPLY;
+			goto end;
+		}
 		if (ap->port <= sa->ports)
 			ports[ap->port - 1] = ap->vlan;
 	}

@@ -31,10 +31,16 @@ int ngadmin_getQOSMode (struct ngadmin *nga, int *s)
 	
 	*s = 0;
 	
-	if (attr->first != NULL) {
-		at = attr->first->data;
-		*s = *(char*)at->data;
+	if (attr->first == NULL) {
+		ret = ERR_BADREPLY;
+		goto end;
 	}
+	at = attr->first->data;
+	if (at->size != 1) {
+		ret = ERR_BADREPLY;
+		goto end;
+	}
+	*s = *(char*)at->data;
 	
 	
 end:
@@ -89,6 +95,10 @@ int ngadmin_getQOSValues (struct ngadmin *nga, char *ports)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		aq = at->data;
+		if (at->size == 0) {
+			ret = ERR_BADREPLY;
+			goto end;
+		}
 		if (aq->port <= sa->ports)
 			ports[aq->port - 1] = aq->prio;
 	}

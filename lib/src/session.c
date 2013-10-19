@@ -89,9 +89,10 @@ int ngadmin_scan (struct ngadmin *nga)
 		if (sa == NULL)
 			return ERR_MEM;
 		
-		extractSwitchAttributes(sa, attr);
+		if (extractSwitchAttributes(sa, attr) == 0)
+			pushBackList(swiList, sa);
+		
 		clearList(attr, (void(*)(void*))freeAttr);
-		pushBackList(swiList, sa);
 	}
 	
 	nga->swi_count = swiList->count;

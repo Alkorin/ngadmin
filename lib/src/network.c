@@ -314,7 +314,7 @@ end:
 }
 
 
-void extractSwitchAttributes (struct swi_attr *sa, const List *l)
+int extractSwitchAttributes (struct swi_attr *sa, const List *l)
 {
 	const ListNode *ln;
 	const struct attr *at;
@@ -325,6 +325,8 @@ void extractSwitchAttributes (struct swi_attr *sa, const List *l)
 	
 	for (ln = l->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
+		if (at->size == 0)
+			return -EMSGSIZE;
 		
 		switch (at->attr) {
 		
@@ -374,9 +376,12 @@ void extractSwitchAttributes (struct swi_attr *sa, const List *l)
 			break;
 		
 		case ATTR_END:
-			return;
+			return 0;
 		}
 	}
+	
+	
+	return 0;
 }
 
 

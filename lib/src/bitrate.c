@@ -31,10 +31,16 @@ int ngadmin_getStormFilterState (struct ngadmin *nga, int *s)
 	
 	*s = 0;
 	
-	if (attr->first != NULL) {
-		at = attr->first->data;
-		*s = *(char*)at->data;
+	if (attr->first == NULL) {
+		ret = ERR_BADREPLY;
+		goto end;
 	}
+	at = attr->first->data;
+	if (at->size != 1) {
+		ret = ERR_BADREPLY;
+		goto end;
+	}
+	*s = *(char*)at->data;
 	
 	
 end:
@@ -90,6 +96,10 @@ int ngadmin_getStormFilterValues (struct ngadmin *nga, int *ports)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		sb = at->data;
+		if (at->size == 0) {
+			ret = ERR_BADREPLY;
+			goto end;
+		}
 		if (sb->port <= sa->ports)
 			ports[sb->port - 1] = sb->bitrate;
 	}
@@ -168,6 +178,10 @@ int ngadmin_getBitrateLimits (struct ngadmin *nga, int *ports)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		pb = at->data;
+		if (at->size == 0) {
+			ret = ERR_BADREPLY;
+			goto end;
+		}
 		if (pb->port > sa->ports)
 			continue;
 		else if (at->attr == ATTR_BITRATE_INPUT)

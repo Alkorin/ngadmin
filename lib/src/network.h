@@ -32,7 +32,7 @@ int readRequest (struct ngadmin *nga, List *attr);
 int writeRequest (struct ngadmin *nga, List *attr);
 
 
-void extractSwitchAttributes (struct swi_attr *sa, const List *l);
+int extractSwitchAttributes (struct swi_attr *sa, const List *l);
 
 
 #endif

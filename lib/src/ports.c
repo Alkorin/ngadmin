@@ -38,6 +38,10 @@ int ngadmin_getPortsStatus (struct ngadmin *nga, unsigned char *ports)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		ps = at->data;
+		if (at->size == 0) {
+			ret = ERR_BADREPLY;
+			goto end;
+		}
 		if (ps->port <= sa->ports)
 			ports[ps->port - 1] = ps->status;
 	}
@@ -80,6 +84,10 @@ int ngadmin_getPortsStatistics (struct ngadmin *nga, struct port_stats *ps)
 	for (ln = attr->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
 		aps = at->data;
+		if (at->size == 0) {
+			ret = ERR_BADREPLY;
+			goto end;
+		}
 		if (aps->port <= sa->ports) {
 			ps[aps->port -1].recv = aps->recv;
 			ps[aps->port -1].sent = aps->sent;
@@ -152,7 +160,11 @@ int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb)
 		for (ln = attr->first; ln != NULL; ln = ln->next) {
 			at = ln->data;
 			acr = at->data;
-			if (at->size == sizeof(struct attr_cabletest_result) && acr->port == ct[i].port) {
+			if (at->size != sizeof(struct attr_cabletest_result)) {
+				ret = ERR_BADREPLY;
+				goto end;
+			}
+			if (acr->port == ct[i].port) {
 				ct[i].v1 = acr->v1;
 				ct[i].v2 = acr->v2;
 				break;
