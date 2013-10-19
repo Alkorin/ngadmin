@@ -48,9 +48,9 @@ int do_netconf_set (int argc, const char **argv, struct ngadmin *nga)
 		return 1;
 	}
 	
-	memset(&nc, 0, sizeof(struct net_conf));
+	memcpy(&nc, &sa->nc, sizeof(struct net_conf));
 	
-	for (k = 0; k < argc; k += 2) {
+	for (k = 0; k < argc - 1; k += 2) {
 		if (strcasecmp(argv[k], "dhcp") == 0) {
 			if (strcasecmp(argv[k + 1], "yes") == 0) {
 				nc.dhcp = true;

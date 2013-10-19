@@ -357,7 +357,10 @@ void extractSwitchAttributes (struct swi_attr *sa, const List *l)
 			break;
 		
 		case ATTR_DHCP:
-			sa->nc.dhcp = (ntohs(*(unsigned short*)at->data) == 1);
+			/* Note: DHCP attribute is special, it is 2 two bytes long when sent
+			 * by the switch but only 1 byte long when sent by the client
+			 */
+			sa->nc.dhcp = (at->size == 2) && ((*(unsigned short*)at->data) == 1);
 			break;
 		
 		case ATTR_FIRM_VER:

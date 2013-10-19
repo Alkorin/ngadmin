@@ -556,8 +556,16 @@ static int processAttr (struct attr *at, bool encode)
 		return 0;
 	
 	case ATTR_DHCP:
-		if (at->size != 2)
+		/* Note: DHCP attribute is special, it is 2 two bytes long
+		 * when sent by the switch but only 1 byte long when sent
+		 * by the client
+		 */
+		if (at->size == 1) {
+			*byte = (*byte != 0);
+			return 0;
+		} else if (at->size > 2) {
 			return -EMSGSIZE;
+		}
 		
 		if (!encode)
 			*word = ntohs(*word);

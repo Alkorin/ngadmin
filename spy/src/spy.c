@@ -276,7 +276,7 @@ static void print_attr (const struct attr *at)
 		break;
 	
 	case ATTR_DHCP:
-		printf("\tDHCP = %s\n", *byte ? "yes" : "no");
+		printf("\tDHCP = %s\n", (at->size == 1 ? *byte : *word) ? "yes" : "no");
 		break;
 	
 	case ATTR_FIRM_VER:
