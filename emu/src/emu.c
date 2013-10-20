@@ -19,18 +19,37 @@
 
 #define MAX_STR_SIZE	64
 
+
+struct port_info {
+	/* read-only properties */
+	unsigned char state;
+	unsigned long long recv;
+	unsigned long long sent;
+	unsigned long long crc;
+	/* configurable properties */
+	unsigned short pvid;
+	int bitrate_in;
+	int bitrate_out;
+	unsigned char prio;
+};
+
+
 struct swi_info {
-	char product[MAX_STR_SIZE];
-	char name[MAX_STR_SIZE];
-	char firmware[MAX_STR_SIZE];
-	char password[MAX_STR_SIZE];
-	bool encpass;
-	unsigned char ports;
+	/* intrinsic properties */
 	unsigned char mac[ETH_ALEN];
+	char product[MAX_STR_SIZE];
+	char firmware[MAX_STR_SIZE];
+	unsigned char ports_count;
+	bool encpass;
+	/* configurable properties */
+	char name[MAX_STR_SIZE];
+	char password[MAX_STR_SIZE];
 	in_addr_t ip;
 	in_addr_t netmask;
 	in_addr_t gw;
 	bool dhcp;
+	/* ports specifics */
+	struct port_info *ports;
 };
 
 
@@ -45,7 +64,10 @@ static int process_read_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 	unsigned int *dword;
 	struct attr_port_status *apu;
 	struct attr_port_stat *api;
+	struct attr_bitrate *ab;
 	
+	
+	(void)nc;
 	
 	switch (at->attr) {
 	}
@@ -86,7 +108,7 @@ static int process_read_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 	
 	case ATTR_PORTS_COUNT:
 		byte = malloc(1);
-		*byte = swi.ports;
+		*byte = swi.ports_count;
 		at->data = byte;
 		at->size = 1;
 		break;
@@ -133,10 +155,10 @@ static int process_read_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 		break;
 	
 	case ATTR_PORT_STATUS:
-		for (p = 1; p <= swi.ports; p++) {
+		for (p = 0; p < swi.ports_count; p++) {
 			apu = malloc(sizeof(*apu));
-			apu->port = p;
-			apu->status = SPEED_1000;
+			apu->port = p + 1;
+			apu->status = swi.ports[p].state;
 			apu->unk = 0;
 			
 			pushFrontList(attr, newAttr(ATTR_PORT_STATUS, sizeof(*apu), apu));
@@ -144,16 +166,37 @@ static int process_read_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 		return 1;
 	
 	case ATTR_PORT_STATISTICS:
-		for (p = 1; p <= swi.ports; p++) {
+		for (p = 0; p < swi.ports_count; p++) {
 			api = malloc(sizeof(*api));
 			memset(api, 0, sizeof(*api));
-			api->port = p;
-			api->recv = p * 100000;
-			api->sent = p * 200000;
+			api->port = p + 1;
+			api->recv = swi.ports[p].recv;
+			api->sent = swi.ports[p].sent;
 			
 			pushFrontList(attr, newAttr(ATTR_PORT_STATISTICS, sizeof(*api), api));
 		}
 		return 1;
+	
+	case ATTR_BITRATE_INPUT:
+		for (p = 0; p < swi.ports_count; p++) {
+			ab = malloc(sizeof(*ab));
+			ab->port = p + 1;
+			ab->bitrate = swi.ports[p].bitrate_in;
+			
+			pushFrontList(attr, newAttr(ATTR_BITRATE_INPUT, sizeof(*ab), ab));
+		}
+		return 1;
+	
+	case ATTR_BITRATE_OUTPUT:
+		for (p = 0; p < swi.ports_count; p++) {
+			ab = malloc(sizeof(*ab));
+			ab->port = p + 1;
+			ab->bitrate = swi.ports[p].bitrate_out;
+			
+			pushFrontList(attr, newAttr(ATTR_BITRATE_OUTPUT, sizeof(*ab), ab));
+		}
+		return 1;
+	
 	}
 	
 	return 0;
@@ -162,8 +205,12 @@ static int process_read_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 
 static int process_write_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 {
+	unsigned char p, *byte;
 	char *text;
+	struct attr_bitrate *ab;
 	
+	
+	(void)attr;
 	
 	if (at->size == 0)
 		return -EMSGSIZE;
@@ -177,7 +224,54 @@ static int process_write_attr (struct nsdp_cmd *nc, List *attr, struct attr *at)
 		trim(text, MAX_STR_SIZE);
 		strncpy(swi.password, text, MAX_STR_SIZE);
 		break;
+	
+	case ATTR_STATS_RESET:
+		for (p = 0; p < swi.ports_count; p++) {
+			swi.ports[p].sent = 0;
+			swi.ports[p].recv = 0;
+			swi.ports[p].crc = 0;
+		}
+		break;
+	
+	case ATTR_DHCP:
+		/* Note: DHCP attribute is special, it is 2 two bytes long
+		 * when sent by the switch but only 1 byte long when sent
+		 * by the client
+		 */
+		if (at->size != 1) {
+			nc->error = 4;
+			break;
+		}
+		byte = at->data;
+		swi.dhcp = (*byte == 1);
+		break;
+	
+	case ATTR_IP:
+	case ATTR_NETMASK:
+	case ATTR_GATEWAY:
+		/* a real switch would accept these modifications, but here we
+		 * are not going to mess up the host network settings, so we
+		 * refuse these requests
+		 */
+		nc->error = ERROR_READONLY;
+		nc->attr_error = at->attr;
+		break;
+	
+	case ATTR_BITRATE_INPUT:
+		ab = at->data;
+		if (ab->port > swi.ports_count)
+			return -EOVERFLOW;
+		swi.ports[ab->port - 1].bitrate_in = ab->bitrate;
+		break;
+	
+	case ATTR_BITRATE_OUTPUT:
+		ab = at->data;
+		if (ab->port > swi.ports_count)
+			return -EOVERFLOW;
+		swi.ports[ab->port - 1].bitrate_out = ab->bitrate;
+		break;
 	}
+	
 	
 	return 1;
 }
@@ -344,6 +438,7 @@ int main (int argc, char **argv)
 		{0, 0, 0, 0}
 	};
 	int err = 0, len;
+	unsigned char p;
 	const char *iface = "eth0";
 	struct sockaddr_in local;
 	struct sigaction sa;
@@ -405,8 +500,17 @@ int main (int argc, char **argv)
 	strncpy(swi.firmware, "0.1", MAX_STR_SIZE);
 	strncpy(swi.password, "password", MAX_STR_SIZE);
 	swi.encpass = true;
-	swi.ports = 8;
+	swi.ports_count = 8;
 	swi.dhcp = false;
+	swi.ports = malloc(swi.ports_count * sizeof(struct port_info));
+	memset(swi.ports, 0, swi.ports_count * sizeof(struct port_info));
+	for (p = 0; p < swi.ports_count; p++) {
+		swi.ports[p].state = SPEED_1000;
+		swi.ports[p].pvid = 1;
+		swi.ports[p].bitrate_in = BITRATE_NOLIMIT;
+		swi.ports[p].bitrate_out = BITRATE_NOLIMIT;
+		swi.ports[p].prio = PRIO_NORM;
+	}
 	if (netdev_info(iface) < 0)
 		goto end;
 	
@@ -437,6 +541,7 @@ int main (int argc, char **argv)
 	}
 	
 	destroyList(attr, (void(*)(void*))freeAttr);
+	free(swi.ports);
 	
 end:
 	close(sock);
