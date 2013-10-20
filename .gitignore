@@ -9,6 +9,7 @@
 *.pc
 ngcli
 ngspy
+ngemu
 doxyfile
 lib/doc/
 raw/doc/
