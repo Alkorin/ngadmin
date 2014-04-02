@@ -326,21 +326,15 @@ int main (int argc, char **argv)
 	if (mac != NULL && pre_login(mac, retries) != 0)
 		goto end;
 	
-	if (batch) {
-		/* in batch mode, we must be logged to continue */
-		if (ngadmin_getCurrentSwitch(nga) == NULL) {
-			printf("must be logged\n");
-			goto end;
-		}
-	} else {
 #ifdef HAVE_LIBREADLINE
+	if (!batch) {
 		/* initialize readline functions */
 		rl_attempted_completion_function = my_completion;
 		rl_completion_entry_function = my_generator;
 		
 		sigsetjmp(jmpbuf, 1);
-#endif
 	}
+#endif
 	
 	main_loop_continue = 1;
 	while (main_loop_continue) {
