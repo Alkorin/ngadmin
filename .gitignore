@@ -32,3 +32,4 @@ libtool
 stamp-h1
 .deps/
 .libs/
+INSTALL
