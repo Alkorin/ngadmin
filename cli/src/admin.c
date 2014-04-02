@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
-#include <setjmp.h>
 
 #include <getopt.h>
 #ifdef HAVE_LIBREADLINE
+#include <setjmp.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
@@ -54,6 +54,8 @@ static const struct TreeNode* getSubCom (char **com, int n, int *t)
 
 #ifdef HAVE_LIBREADLINE
 static const struct TreeNode *compcur;
+static sigjmp_buf jmpbuf;
+static bool batch;
 
 
 static char* my_generator (const char* text, int state)
@@ -113,10 +115,8 @@ static char** my_completion (const char *text, int start, int end UNUSED)
 
 int main_loop_continue;
 static struct ngadmin *nga;
-static sigjmp_buf jmpbuf;
 static struct termios orig_term;
 struct termios current_term;
-static bool batch;
 
 
 NORET static void handler (int sig)
@@ -127,11 +127,13 @@ NORET static void handler (int sig)
 	case SIGINT:
 		printf("interrupt\n");
 		
+#ifdef HAVE_LIBREADLINE
 		current_term.c_lflag |= ECHO;
 		tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
 		
 		if (!batch && main_loop_continue)
 			siglongjmp(jmpbuf, 1);
+#endif
 	
 	default:
 		ngadmin_close(nga);
@@ -219,8 +221,6 @@ int main (int argc, char **argv)
 	current_term = orig_term;
 #ifdef HAVE_LIBREADLINE
 	batch = false;
-#else
-	batch = true;
 #endif
 	
 	opterr = 0;
@@ -229,7 +229,9 @@ int main (int argc, char **argv)
 		switch (n) {
 		
 		case 'a':
+#ifdef HAVE_LIBREADLINE
 			batch = true;
+#endif
 			break;
 		
 		case 'b':
@@ -312,9 +314,11 @@ int main (int argc, char **argv)
 	if (ngadmin_useGlobalBroadcast(nga, global) != ERR_OK)
 		goto end;
 	
+#ifdef HAVE_LIBREADLINE
 	/* non-TTY inputs are automatically set to batch mode */
 	if (!isatty(STDIN_FILENO))
 		batch = true;
+#endif
 	
 	if (password != NULL)
 		ngadmin_setPassword(nga, password);
@@ -341,11 +345,13 @@ int main (int argc, char **argv)
 		/* read user input */
 		line = NULL;
 		n = 0;
+#ifdef HAVE_LIBREADLINE
 		if (batch)
 			n = getline(&line, (size_t*)&i, stdin);
-#ifdef HAVE_LIBREADLINE
 		else
 			line = readline("> ");
+#else
+		n = getline(&line, (size_t*)&i, stdin);
 #endif
 		if (n < 0 || line == NULL)
 			goto end;
