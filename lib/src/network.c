@@ -325,8 +325,12 @@ int extractSwitchAttributes (struct swi_attr *sa, const List *l)
 	
 	for (ln = l->first; ln != NULL; ln = ln->next) {
 		at = ln->data;
-		if (at->size == 0)
-			return -EMSGSIZE;
+		if (at->size == 0) {
+			if (at->attr == ATTR_NAME)
+				continue;
+			else
+				return -EMSGSIZE;
+		}
 		
 		switch (at->attr) {
 		
