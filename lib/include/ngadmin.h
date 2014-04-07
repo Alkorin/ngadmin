@@ -50,7 +50,8 @@ enum {
 	ERR_MEM = -8,			/**< out of memory */
 	ERR_NOTIMPL = -9,		/**< not implemented */
 	ERR_BADREPLY = -10,		/**< bad reply */
-	ERR_UNKNOWN = -11		/**< unknown error */
+	ERR_INVOP = -11,		/**< invalid operation */
+	ERR_UNKNOWN = -12		/**< unknown error */
 };
 
 

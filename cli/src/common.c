@@ -44,6 +44,10 @@ void printErrCode (int err)
 		printf("bad reply from switch\n");
 		break;
 	
+	case ERR_INVOP:
+		printf("invalid operation\n");
+		break;
+	
 	case ERR_UNKNOWN:
 		printf("unknown error\n");
 		break;

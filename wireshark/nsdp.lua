@@ -31,6 +31,8 @@ local op_codes = {
 
 local error_codes = {
 	[0] = "OK",
+	[3] = "Read Only",
+	[4] = "Write Only",
 	[5] = "Invalid Value",
 	[7] = "Access Denied"
 }

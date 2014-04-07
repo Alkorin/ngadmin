@@ -18,6 +18,7 @@
 #define CODE_WRITE_REP		4
 
 #define ERROR_READONLY		3
+#define ERROR_WRITEONLY		4
 #define ERROR_INVALID_VALUE	5
 #define ERROR_DENIED		7
 

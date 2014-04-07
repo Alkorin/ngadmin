@@ -149,6 +149,10 @@ static int checkErrorCode (const struct nsdp_cmd *nc)
 	case 0:
 		return ERR_OK;
 	
+	case ERROR_READONLY:
+	case ERROR_WRITEONLY:
+		return ERR_INVOP;
+
 	case ERROR_DENIED:
 		return (nc->attr_error == ATTR_PASSWORD) ? ERR_BADPASS : ERR_DENIED;
 	
