@@ -164,6 +164,15 @@ int ngadmin_login (struct ngadmin *nga, int id)
 	 */
 	pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
 	ret = readRequest(nga, attr);
+	
+	if (ret == ERR_INVOP) {
+		/* it seems some switches do not support login with read request
+		 * fallback to write request, even if it has the drawback of
+		 * the password being broadcasted back by the switch
+		 */
+		ret = writeRequest(nga, NULL);
+	}
+	
 	if (ret == ERR_OK ) {
 		/* login succeeded */
 		/* TODO: if keep broadcasting is disabled, connect() the UDP
