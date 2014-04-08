@@ -114,10 +114,10 @@ void displaySwitchTab (const struct swi_attr *sa, int nb)
 		return;
 	}
 	
-	printf("Num\tMac\t\t\tProduct\t\tName\t\t\tIP\t\tPorts\tFirmware\n");
+	printf("Num\tMac\t\t\tProduct\t\t\tName\t\t\t\t\tIP\t\tPorts\tFirmware\n");
 	
 	for (i = 0; i < nb; i++)
-		printf("%i\t%s\t%s\t%s\t\t%s\t%i\t%s\n", i, ether_ntoa(&sa[i].mac), sa[i].product, sa[i].name, inet_ntoa(sa[i].nc.ip), sa[i].ports, sa[i].firmware);
+		printf("% 3d\t%-17s\t%-16.16s\t%-32.32s\t%-15s\t% 5d\t%s\n", i, ether_ntoa(&sa[i].mac), sa[i].product, sa[i].name, inet_ntoa(sa[i].nc.ip), sa[i].ports, sa[i].firmware);
 	
 	printf("\nfound %i switch(es)\n", nb);
 }
