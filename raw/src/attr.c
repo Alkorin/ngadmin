@@ -77,9 +77,11 @@ static int ports_status_endecode (struct attr *at)
 	switch (ps->status) {
 	
 	case SPEED_DOWN:
-	case SPEED_10:
-	case SPEED_100:
-	case SPEED_1000:
+	case SPEED_10_HD:
+	case SPEED_10_FD:
+	case SPEED_100_HD:
+	case SPEED_100_FD:
+	case SPEED_1000_FD:
 		return 0;
 	
 	default:

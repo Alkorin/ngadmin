@@ -505,7 +505,7 @@ int main (int argc, char **argv)
 	swi.ports = malloc(swi.ports_count * sizeof(struct port_info));
 	memset(swi.ports, 0, swi.ports_count * sizeof(struct port_info));
 	for (p = 0; p < swi.ports_count; p++) {
-		swi.ports[p].state = SPEED_1000;
+		swi.ports[p].state = SPEED_1000_FD;
 		swi.ports[p].pvid = 1;
 		swi.ports[p].bitrate_in = BITRATE_NOLIMIT;
 		swi.ports[p].bitrate_out = BITRATE_NOLIMIT;

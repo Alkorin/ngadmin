@@ -63,9 +63,11 @@ enum {
 enum {
 	SPEED_UNK = -1,			/**< unknown status */
 	SPEED_DOWN = 0,			/**< link down */
-	SPEED_10 = 1,			/**< 10 Mb/s */
-	SPEED_100 = 4,			/**< 100 Mb/s */
-	SPEED_1000 = 5			/**< 1000 Mb/s */
+	SPEED_10_HD = 1,		/**< 10 Mb/s half duplex */
+	SPEED_10_FD = 2,		/**< 10 Mb/s full duplex */
+	SPEED_100_HD = 3,		/**< 100 Mb/s half duplex */
+	SPEED_100_FD = 4,		/**< 100 Mb/s full duplex */
+	SPEED_1000_FD = 5		/**< 1000 Mb/s full duplex */
 };
 
 

@@ -66,14 +66,20 @@ static const char* port_status_str (unsigned char status)
 	case SPEED_DOWN:
 		return "down";
 	
-	case SPEED_10:
-		return "10M";
+	case SPEED_10_HD:
+		return "10M half-duplex";
 	
-	case SPEED_100:
-		return "100M";
+	case SPEED_10_FD:
+		return "10M full-duplex";
 	
-	case SPEED_1000:
-		return "1000M";
+	case SPEED_100_HD:
+		return "100M half-duplex";
+	
+	case SPEED_100_FD:
+		return "100M full-duplex";
+	
+	case SPEED_1000_FD:
+		return "1000M full-duplex";
 	
 	default:
 		return "unknown";

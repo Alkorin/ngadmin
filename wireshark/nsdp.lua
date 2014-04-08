@@ -40,9 +40,11 @@ local error_codes = {
 
 local status_codes = {
 	[0] = "down",
-	[1] = "10M",
-	[4] = "100M",
-	[5] = "1000M"
+	[1] = "10M half-duplex",
+	[2] = "10M full-duplex",
+	[3] = "100M half-duplex",
+	[4] = "100M full-duplex",
+	[5] = "1000M full-duplex"
 }
 
 

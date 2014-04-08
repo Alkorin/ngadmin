@@ -38,16 +38,24 @@ int do_ports_state (int argc, const char **argv UNUSED, struct ngadmin *nga)
 			printf("down");
 			break;
 		
-		case SPEED_10:
-			printf("up, 10M");
+		case SPEED_10_HD:
+			printf("up, 10M half-duplex");
 			break;
 		
-		case SPEED_100:
-			printf("up, 100M");
+		case SPEED_10_FD:
+			printf("up, 10M full-duplex");
 			break;
 		
-		case SPEED_1000:
-			printf("up, 1000M");
+		case SPEED_100_HD:
+			printf("up, 100M half-duplex");
+			break;
+		
+		case SPEED_100_FD:
+			printf("up, 100M full-duplex");
+			break;
+		
+		case SPEED_1000_FD:
+			printf("up, 1000M full-duplex");
 			break;
 		
 		default:
