@@ -241,11 +241,13 @@ int readRequest (struct ngadmin *nga, List *attr)
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
 		goto end;
+	} else if (i == -ETIMEDOUT) {
+		ret = ERR_TIMEOUT;
+		goto end;
 	} else if (i < 0) {
-		ret = (errno == EAGAIN || errno == EWOULDBLOCK) ? ERR_TIMEOUT : ERR_NET;
+		ret = ERR_NET;
 		goto end;
 	}
-	
 	
 	/* check the switch error code */
 	ret = checkErrorCode(&nc);
@@ -300,8 +302,10 @@ int writeRequest (struct ngadmin *nga, List *attr)
 	if (i == -EINVAL) {
 		ret = ERR_INVARG;
 		goto end;
+	} else if (i == -ETIMEDOUT) {
+		ret = ERR_TIMEOUT;
 	} else if (i < 0) {
-		ret = (errno == EAGAIN || errno == EWOULDBLOCK) ? ERR_TIMEOUT : ERR_NET;
+		ret = ERR_NET;
 		goto end;
 	}
 	

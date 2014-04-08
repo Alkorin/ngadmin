@@ -116,8 +116,10 @@ int recvNsdpPacket (int sock, struct nsdp_cmd *nc, List *attr, const struct time
 			timeval_to_timespec(&timeend, &tv);
 #endif
 			timewait = timespec_diff_ms(&timecurrent, &timeend);
-			if (timewait <= 0)
+			if (timewait <= 0) {
+				len = -ETIMEDOUT;
 				break;
+			}
 		}
 		
 		len = poll(&fds, 1, timewait);
