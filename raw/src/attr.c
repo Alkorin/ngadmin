@@ -259,10 +259,9 @@ static int mirror_encode (struct attr *at)
 	 * the ports from which the data is copied, it must not be empty
 	 *
 	 * am->outport == 0 is allowed and means mirroring is disabled
-	 * but in that case the ports array must be empty
 	 */
 	ports = at->size - sizeof(struct attr_mirror);
-	if ((am->outport == 0) ^ (ports == 0))
+	if (am->outport > 0 && ports == 0)
 		return -EINVAL;
 	
 	sz = 3 + ((ports - 1) >> 3);
@@ -276,7 +275,7 @@ static int mirror_encode (struct attr *at)
 	/* FIXME: if ports > 8 */
 	for (p = 1; p <= ports; p++) {
 		if (am->outport != p)
-			r[2] |= (am->ports[p] & 1) << (8 - p);
+			r[2] |= (am->ports[p - 1] & 1) << (8 - p);
 	}
 	
 	free(at->data);
@@ -318,7 +317,7 @@ static int mirror_decode (struct attr *at)
 	
 	/* FIXME: if ports > 8 */
 	for (p = 1; p <= ports; p++)
-		am->ports[p] = (r[2] >> (8 - p)) & 1;
+		am->ports[p - 1] = (r[2] >> (8 - p)) & 1;
 	
 	free(at->data);
 	at->data = am;
