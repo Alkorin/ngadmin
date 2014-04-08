@@ -10,7 +10,7 @@
 #include <sys/ioctl.h>
 
 #include <nsdp/attr.h>
-#include <nsdp/misc.h>
+#include <nsdp/str.h>
 #include <nsdp/net.h>
 #include <nsdp/protocol.h>
 

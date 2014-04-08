@@ -247,6 +247,15 @@ struct ngadmin* ngadmin_init (const char *iface);
 
 
 /**
+ * Convert error to string.
+ * This function returns a string corresponding to the numerical error code.
+ * @param error The numerical error code to convert.
+ * @return A pointer to a static string or NULL if the error code is invalid.
+ */
+const char* ngadmin_errorStr (int error);
+
+
+/**
  * Close NgAdmin library. 
  * This function frees the resources used by the library. You really should 
  * call this when you are done using the library. 

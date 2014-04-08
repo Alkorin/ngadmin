@@ -3,10 +3,34 @@
 
 #include <nsdp/attr.h>
 #include <nsdp/protocol.h>
-#include <nsdp/misc.h>
+#include <nsdp/str.h>
 
 #include "lib.h"
 #include "network.h"
+
+
+static const char* const liberror_str_tab[] = {
+	[-ERR_OK] = "no error",
+	[-ERR_NET] = "network error",
+	[-ERR_NOTLOG] "not logged",
+	[-ERR_DENIED] = "access denied",
+	[-ERR_BADPASS] = "bad password",
+	[-ERR_BADID] = "bad id",
+	[-ERR_INVARG] = "invalid argument",
+	[-ERR_TIMEOUT] = "timeout",
+	[-ERR_MEM] = "out of memory",
+	[-ERR_NOTIMPL] = "not implemented",
+	[-ERR_BADREPLY] = "bad reply",
+	[-ERR_INVOP] = "invalid operation",
+	[-ERR_UNKNOWN] = "unknown error",
+	NULL
+};
+
+
+const char* ngadmin_errorStr (int error)
+{
+	return getValueStr(liberror_str_tab, -ERR_OK, -ERR_UNKNOWN, -error);
+}
 
 
 int ngadmin_setName (struct ngadmin *nga, const char *name)

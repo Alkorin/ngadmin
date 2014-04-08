@@ -14,7 +14,7 @@
 #include <nsdp/protocol.h>
 #include <nsdp/attr.h>
 #include <nsdp/net.h>
-#include <nsdp/misc.h>
+#include <nsdp/str.h>
 
 
 #define MAX_STR_SIZE	64

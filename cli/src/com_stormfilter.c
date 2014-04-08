@@ -75,7 +75,7 @@ int do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	/* read defaults */
 	if (strcmp(argv[0], "all") == 0) {
-		d = parseBitrate(argv[1]);
+		d = parseBitrateStr(argv[1]);
 		argv += 2;
 		argc -= 2;
 	}
@@ -89,7 +89,7 @@ int do_stormfilter_set (int argc, const char **argv, struct ngadmin *nga)
 		p = strtol(argv[i], NULL, 0);
 		if (p < 1 || p > sa->ports)
 			continue;
-		ports[p - 1] = parseBitrate(argv[i + 1]);
+		ports[p - 1] = parseBitrateStr(argv[i + 1]);
 	}
 	
 	/* send the new configuration to the switch */
@@ -145,7 +145,7 @@ int do_stormfilter_show (int argc, const char **argv UNUSED, struct ngadmin *nga
 	}
 	
 	for (i = 0; i < sa->ports; i++)
-		printf("port %i: %s\n", i + 1, bitrates[ports[i]]);
+		printf("port %i: %s\n", i + 1, safeStr(getBitrateStr(ports[i])));
 	
 end:
 	free(ports);

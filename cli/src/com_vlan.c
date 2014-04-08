@@ -391,32 +391,7 @@ int do_vlan_mode_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 		goto end;
 	}
 	
-	printf("VLAN type: ");
-	switch (t) {
-	
-	case VLAN_DISABLED:
-		printf("disabled\n");
-		break;
-	
-	case VLAN_PORT_BASIC:
-		printf("port basic\n");
-		break;
-	
-	case VLAN_PORT_ADV:
-		printf("port advanced\n");
-		break;
-	
-	case VLAN_DOT_BASIC:
-		printf("802.1Q basic\n");
-		break;
-	
-	case VLAN_DOT_ADV:
-		printf("802.1Q advanced\n");
-		break;
-	
-	default:
-		printf("unknown (%i)\n", t);
-	}
+	printf("VLAN type: %s\n", safeStr(getVlanTypeStr(t)));
 	
 end:
 	

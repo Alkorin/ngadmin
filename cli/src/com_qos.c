@@ -63,7 +63,7 @@ int do_qos_set (int argc, const char **argv, struct ngadmin *nga)
 	
 	/* read defaults */
 	if (strcmp(argv[0], "all") == 0) {
-		d = parsePrio(argv[1]);
+		d = parseQosPrioStr(argv[1]);
 		argv += 2;
 		argc -= 2;
 	}
@@ -77,7 +77,7 @@ int do_qos_set (int argc, const char **argv, struct ngadmin *nga)
 		p = strtol(argv[i], NULL, 0);
 		if (p < 1 || p > sa->ports)
 			continue;
-		ports[p - 1] = parsePrio(argv[i + 1]);
+		ports[p - 1] = parseQosPrioStr(argv[i + 1]);
 	}
 	
 	/* send the new configuration to the switch */
@@ -118,21 +118,9 @@ int do_qos_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 		goto end;
 	}
 	
-	printf("QoS mode: ");
-	switch (s) {
-	
-	case QOS_DOT:
-		printf("802.1p\n");
+	printf("QoS mode: %s\n", safeStr(getQosTypeStr(s)));
+	if (s != QOS_PORT)
 		goto end;
-	
-	case QOS_PORT:
-		printf("port based\n");
-		break;
-		
-	default:
-		printf("unknown (%i)\n", s);
-		goto end;
-	}
 	
 	ports = malloc(sa->ports * sizeof(char));
 	i = ngadmin_getQOSValues(nga, ports);
@@ -143,7 +131,7 @@ int do_qos_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	}
 	
 	for (i = 0; i < sa->ports; i++)
-		printf("port %i: %s\n", i + 1, prio[(int)ports[i]]);
+		printf("port %i: %s\n", i + 1, safeStr(getQosPrioStr(ports[i])));
 	
 end:
 	free(ports);

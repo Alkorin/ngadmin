@@ -10,7 +10,7 @@
 #include <nsdp/protocol.h>
 #include <nsdp/attr.h>
 #include <nsdp/net.h>
-#include <nsdp/misc.h>
+#include <nsdp/str.h>
 
 
 static void print_password (const char *pass, unsigned int len)
@@ -19,12 +19,7 @@ static void print_password (const char *pass, unsigned int len)
 	char *s;
 	
 	
-	for (i = 0; i < len; i++) {
-		if (!isprint(pass[i]))
-			break;
-	}
-	
-	if (i == len) {
+	if (isStringPrintable(pass, len)) {
 		/* all characters are printable, cleartext password assumed */
 		printf("(clear) \"%s\"", pass);
 		return;
@@ -38,12 +33,7 @@ static void print_password (const char *pass, unsigned int len)
 	
 	passwordEndecode(s, len);
 	
-	for (i = 0; i < len; i++) {
-		if (!isprint(s[i]))
-			break;
-	}
-	
-	if (i == len) {
+	if (isStringPrintable(s, len)) {
 		/* all characters are printable, encrypted password assumed */
 		printf("(encrypted) \"%s\"", s);
 		free(s);
@@ -56,162 +46,6 @@ static void print_password (const char *pass, unsigned int len)
 	printf("(hex) ");
 	for (i = 0; i < len; i++)
 		printf("%02x ", (unsigned char)pass[i]);
-}
-
-
-static const char* port_status_str (unsigned char status)
-{
-	switch (status) {
-	
-	case SPEED_DOWN:
-		return "down";
-	
-	case SPEED_10_HD:
-		return "10M half-duplex";
-	
-	case SPEED_10_FD:
-		return "10M full-duplex";
-	
-	case SPEED_100_HD:
-		return "100M half-duplex";
-	
-	case SPEED_100_FD:
-		return "100M full-duplex";
-	
-	case SPEED_1000_FD:
-		return "1000M full-duplex";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
-static const char* vlan_type_code (unsigned char type)
-{
-	switch (type) {
-	
-	case VLAN_DISABLED:
-		return "disabled";
-	
-	case VLAN_PORT_BASIC:
-		return "basic port based";
-	
-	case VLAN_PORT_ADV:
-		return "advanced port based";
-	
-	case VLAN_DOT_BASIC:
-		return "basic 802.1Q";
-	
-	case VLAN_DOT_ADV:
-		return "advanced 802.1Q";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
-static const char* vlan_code_str (unsigned char code)
-{
-	switch (code) {
-	
-	case VLAN_NO:
-		return "no";
-	
-	case VLAN_UNTAGGED:
-		return "untagged";
-	
-	case VLAN_TAGGED:
-		return "tagged";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
-static const char* qos_type_str (unsigned char type)
-{
-	switch (type) {
-	
-	case QOS_PORT:
-		return "port";
-	
-	case QOS_DOT:
-		return "802.1p";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
-static const char* qos_prio_str (unsigned char prio)
-{
-	switch (prio) {
-	
-	case PRIO_HIGH:
-		return "high";
-	
-	case PRIO_MED:
-		return "medium";
-	
-	case PRIO_NORM:
-		return "normal";
-	
-	case PRIO_LOW:
-		return "low";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
-static const char* bitrate_str (unsigned int bitrate)
-{
-	switch (bitrate) {
-	
-	case BITRATE_NOLIMIT:
-		return "unlimited";
-	
-	case BITRATE_512K:
-		return "512K";
-	
-	case BITRATE_1M:
-		return "1M";
-	
-	case BITRATE_2M:
-		return "2M";
-	
-	case BITRATE_4M:
-		return "4M";
-	
-	case BITRATE_8M:
-		return "8M";
-	
-	case BITRATE_16M:
-		return "16M";
-	
-	case BITRATE_32M:
-		return "32M";
-	
-	case BITRATE_64M:
-		return "64M";
-	
-	case BITRATE_128M:
-		return "128M";
-	
-	case BITRATE_256M:
-		return "256M";
-	
-	case BITRATE_512M:
-		return "512M";
-	
-	default:
-		return "unknown";
-	}
 }
 
 
@@ -309,7 +143,7 @@ static void print_attr (const struct attr *at)
 	case ATTR_PORT_STATUS:
 		printf("\tport status\n");
 		printf("\tport = %u\n", apsu->port);
-		printf("\tstate = %s\n", port_status_str(apsu->status));
+		printf("\tstate = %s\n", safeStr(getSpeedStr(apsu->status)));
 		break;
 	
 	case ATTR_PORT_STATISTICS:
@@ -341,7 +175,7 @@ static void print_attr (const struct attr *at)
 		break;
 	
 	case ATTR_VLAN_TYPE:
-		printf("\tVLAN type = %s\n", vlan_type_code(*byte));
+		printf("\tVLAN type = %s\n", safeStr(getVlanTypeStr(*byte)));
 		break;
 	
 	case ATTR_VLAN_PORT_CONF:
@@ -349,7 +183,7 @@ static void print_attr (const struct attr *at)
 		printf("\tVLAN = %u\n", avc->vlan);
 		ports = at->size - sizeof(struct attr_vlan_conf);
 		for (p = 0; p < ports; p++)
-			printf("\tport %d = %s\n", p + 1, vlan_code_str(avc->ports[p]));
+			printf("\tport %d = %s\n", p + 1, safeStr(getVlanCodeStr(avc->ports[p])));
 		break;
 	
 	case ATTR_VLAN_DOT_CONF:
@@ -357,7 +191,7 @@ static void print_attr (const struct attr *at)
 		printf("\tVLAN = %u\n", avc->vlan);
 		ports = at->size - sizeof(struct attr_vlan_conf);
 		for (p = 0; p < ports; p++)
-			printf("\tport %d = %s\n", p + 1, vlan_code_str(avc->ports[p]));
+			printf("\tport %d = %s\n", p + 1, safeStr(getVlanCodeStr(avc->ports[p])));
 		break;
 	
 	case ATTR_VLAN_DESTROY:
@@ -371,25 +205,25 @@ static void print_attr (const struct attr *at)
 		break;
 	
 	case ATTR_QOS_TYPE:
-		printf("\tQoS type = %s\n", qos_type_str(*byte));
+		printf("\tQoS type = %s\n", safeStr(getQosTypeStr(*byte)));
 		break;
 	
 	case ATTR_QOS_CONFIG:
 		printf("\tQoS configuration\n");
 		printf("\tport = %u\n", aq->port);
-		printf("\tpriority = %s\n", qos_prio_str(aq->prio));
+		printf("\tpriority = %s\n", safeStr(getQosPrioStr(aq->prio)));
 		break;
 	
 	case ATTR_BITRATE_INPUT:
 		printf("\tinput bitrate\n");
 		printf("\tport = %u\n", ab->port);
-		printf("\tbitrate = %s\n", bitrate_str(ab->bitrate));
+		printf("\tbitrate = %s\n", safeStr(getBitrateStr(ab->bitrate)));
 		break;
 	
 	case ATTR_BITRATE_OUTPUT:
 		printf("\toutput bitrate\n");
 		printf("\tport = %u\n", ab->port);
-		printf("\tbitrate = %s\n", bitrate_str(ab->bitrate));
+		printf("\tbitrate = %s\n", safeStr(getBitrateStr(ab->bitrate)));
 		break;
 	
 	case ATTR_STORM_ENABLE:
@@ -399,7 +233,7 @@ static void print_attr (const struct attr *at)
 	case ATTR_STORM_BITRATE:
 		printf("\tstorm filtering bitrate\n");
 		printf("\tport = %u\n", ab->port);
-		printf("\tbitrate = %s\n", bitrate_str(ab->bitrate));
+		printf("\tbitrate = %s\n", safeStr(getBitrateStr(ab->bitrate)));
 		break;
 	
 	case ATTR_MIRROR:
@@ -441,50 +275,6 @@ static void print_attr (const struct attr *at)
 }
 
 
-static const char* code_str (unsigned char code)
-{
-	switch (code) {
-	
-	case CODE_READ_REQ:
-		return "read request";
-	
-	case CODE_READ_REP:
-		return "read reply";
-	
-	case CODE_WRITE_REQ:
-		return "write request";
-	
-	case CODE_WRITE_REP:
-		return "write reply";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
-static const char* error_str (unsigned char err)
-{
-	switch (err) {
-	
-	case 0:
-		return "none";
-	
-	case ERROR_READONLY:
-		return "read only";
-	
-	case ERROR_INVALID_VALUE:
-		return "invalid value";
-	
-	case ERROR_DENIED:
-		return "access denied";
-	
-	default:
-		return "unknown";
-	}
-}
-
-
 static void print_packet (const List *attr, const struct nsdp_cmd *nc)
 {
 	const ListNode *ln;
@@ -492,8 +282,8 @@ static void print_packet (const List *attr, const struct nsdp_cmd *nc)
 	
 	
 	printf("---------------------------------\n");
-	printf("code = %s (%u)\n", code_str(nc->code), nc->code);
-	printf("error = %s (%u)\n", error_str(nc->error), nc->error);
+	printf("code = %s (%u)\n", safeStr(getCodeStr(nc->code)), nc->code);
+	printf("error = %s (%u)\n", safeStr(getErrorStr(nc->error)), nc->error);
 	if (nc->attr_error != 0)
 		printf("erroneous attribute = %04X\n", nc->attr_error);
 	printf("source address = %s:%u\n", inet_ntoa(nc->remote_addr.sin_addr), ntohs(nc->remote_addr.sin_port));

@@ -9,7 +9,7 @@ static int bitrate_analyse (int argc, const char **argv, int *ports)
 	
 	
 	while (i < argc - 1) {
-		s = parseBitrate(argv[i + 1]);
+		s = parseBitrateStr(argv[i + 1]);
 		if (strcmp(argv[i], "inout") == 0) {
 			ports[0] = s;
 			ports[1] = s;
@@ -109,7 +109,7 @@ int do_bitrate_show (int argc, const char **argv UNUSED, struct ngadmin *nga)
 	}
 	
 	for (i = 0; i < sa->ports; i++)
-		printf("port %i: in %s, out %s\n", i + 1, bitrates[ports[2 * i + 0]], bitrates[ports[2 * i + 1]]);
+		printf("port %i: in %s, out %s\n", i + 1, safeStr(getBitrateStr(ports[2 * i + 0])), safeStr(getBitrateStr(ports[2 * i + 1])));
 	
 end:
 	free(ports);

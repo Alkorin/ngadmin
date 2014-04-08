@@ -30,39 +30,8 @@ int do_ports_state (int argc, const char **argv UNUSED, struct ngadmin *nga)
 		goto end;
 	}
 	
-	for (i = 0; i < sa->ports; i++) {
-		printf("port %i: ", i + 1);
-		switch (ports[i]) {
-		
-		case 0:
-			printf("down");
-			break;
-		
-		case SPEED_10_HD:
-			printf("up, 10M half-duplex");
-			break;
-		
-		case SPEED_10_FD:
-			printf("up, 10M full-duplex");
-			break;
-		
-		case SPEED_100_HD:
-			printf("up, 100M half-duplex");
-			break;
-		
-		case SPEED_100_FD:
-			printf("up, 100M full-duplex");
-			break;
-		
-		case SPEED_1000_FD:
-			printf("up, 1000M full-duplex");
-			break;
-		
-		default:
-			printf("unknown (%i)", ports[i]);
-		}
-		putchar('\n');
-	}
+	for (i = 0; i < sa->ports; i++)
+		printf("port %i: %s\n", i + 1, safeStr(getSpeedStr(ports[i])));
 	
 end:
 	free(ports);
