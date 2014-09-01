@@ -4,6 +4,7 @@
 #include <ngadmin.h>
 
 #include <nsdp/attr.h>
+#include <nsdp/str.h>
 #include <nsdp/protocol.h>
 
 #include "lib.h"
@@ -159,11 +160,21 @@ int ngadmin_login (struct ngadmin *nga, int id)
 	}
 	clearList(attr, (void(*)(void*))freeAttr);
 	
-	/* strangely, passwords must never be encrypted inside a read request,
-	 * or it will be rejected. Seems more to be a firmware bug
-	 */
-	pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
+	at = newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password));
+	if (nga->encrypt_pass)
+		passwordEndecode(at->data, at->size);
+	pushBackList(attr, at);
 	ret = readRequest(nga, attr);
+	
+	if (nga->encrypt_pass && ret == ERR_BADPASS) {
+		/* strangely, with some switches, passwords must not be
+		 * encrypted inside read requests or it will be rejected
+		 * seems more to be a firmware bug
+		 */
+		clearList(attr, (void(*)(void*))freeAttr);
+		pushBackList(attr, newAttr(ATTR_PASSWORD, strlen(nga->password), strdup(nga->password)));
+		ret = readRequest(nga, attr);
+	}
 	
 	if (ret == ERR_INVOP) {
 		/* it seems some switches do not support login with read request
