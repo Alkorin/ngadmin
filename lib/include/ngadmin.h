@@ -807,6 +807,28 @@ int ngadmin_getAllPVID (struct ngadmin *nga, unsigned short *ports);
 int ngadmin_setPVID (struct ngadmin *nga, unsigned char port, unsigned short vlan);
 
 
+/**
+ * Get the loop detection state. 
+ * Retrieves the loop detection state. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param s A pointer to an integer which will receive 0 or 1. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
+int ngadmin_getLoopDetectionState (struct ngadmin *nga, int *s);
+
+
+/**
+ * Set the loop detection state. 
+ * Changes the loop detection state. 
+ * @note You must be logged on a switch. 
+ * @param nga A pointer to the ngadmin structure. 
+ * @param s An integer with value 0 or 1. 
+ * @return ERR_OK when everything is well or an error code otherwise. 
+ **/
+int ngadmin_setLoopDetectionState (struct ngadmin *nga, int s);
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -549,6 +549,7 @@ static int processAttr (struct attr *at, bool encode)
 	case ATTR_STORM_ENABLE:
 	case ATTR_IGMP_BLOCK_UNK:
 	case ATTR_IGMP_VALID_V3:
+	case ATTR_LOOP_DETECT:
 		if (at->size != 1)
 			return -EMSGSIZE;
 		
