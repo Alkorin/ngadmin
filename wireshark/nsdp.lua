@@ -225,6 +225,7 @@ local attributes = {
 	[0x6C00] = {name = "Block Unknown IGMP Addresses", dissect = "uint"}, 
 	[0x7000] = {name = "Validate IGMPv3 Headers", dissect = "uint"}, 
 	[0x7400] = {name = "TLV Bitmap", dissect = nill}, 
+	[0x9000] = {name = "Loop Detection", dissect = "uint"}, 
 	[0xFFFF] = {name = "End", dissect = nill}
 }
 

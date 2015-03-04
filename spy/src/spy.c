@@ -267,6 +267,10 @@ static void print_attr (const struct attr *at)
 		printf("\tvalidate IGMPv3 = %s\n", *byte ? "yes" : "no");
 		break;
 	
+	case ATTR_LOOP_DETECT:
+		printf("\tloop detection = %s\n", *byte ? "yes" : "no");
+		break;
+	
 	default:
 		printf("\tunknown\n");
 	}

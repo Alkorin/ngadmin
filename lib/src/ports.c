@@ -184,3 +184,59 @@ end:
 }
 
 
+int ngadmin_getLoopDetectionState (struct ngadmin *nga, int *s)
+{
+	List *attr;
+	ListNode *ln;
+	struct attr *at;
+	int ret = ERR_OK;
+	
+	
+	if (nga == NULL || s == NULL)
+		return ERR_INVARG;
+	else if (nga->current == NULL)
+		return ERR_NOTLOG;
+	
+	attr = createEmptyList();
+	pushBackList(attr, newEmptyAttr(ATTR_LOOP_DETECT));
+	ret = readRequest(nga, attr);
+	if (ret != ERR_OK)
+		goto end;
+	
+	filterAttributes(attr, ATTR_LOOP_DETECT, ATTR_END);
+	
+	*s = 0;
+	
+	if (attr->first == NULL) {
+		ret = ERR_BADREPLY;
+		goto end;
+	}
+	at = attr->first->data;
+	if (at->size != 1) {
+		ret = ERR_BADREPLY;
+		goto end;
+	}
+	*s = *(char *)at->data;
+	
+	
+end:
+	destroyList(attr, (void(*)(void*))freeAttr);
+	
+	
+	return ret;
+}
+
+
+int ngadmin_setLoopDetectionState (struct ngadmin *nga, int s)
+{
+	List *attr;
+	
+	
+	attr = createEmptyList();
+	pushBackList(attr, newByteAttr(ATTR_LOOP_DETECT, s != 0));
+	
+	
+	return writeRequest(nga, attr);
+}
+
+

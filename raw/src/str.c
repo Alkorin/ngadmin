@@ -106,7 +106,7 @@ bool isStringPrintable (const char *str, unsigned int len)
 	const char *p;
 	
 	for (p = str; len > 0; len--) {
-		if (!isprint(*p))
+		if (!isprint(*p++))
 			return false;
 	}
 	

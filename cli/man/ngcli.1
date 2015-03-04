@@ -1,4 +1,4 @@
-.TH NGCLI "1" "October 2013" "NgAdmin 0.1" "User Commands"
+.TH NGCLI "1" "September 2014" "NgAdmin 0.1" "User Commands"
 .SH NAME
 ngcli \- command line interface tool for GS10[58]E administration
 .
@@ -152,6 +152,18 @@ List the detected switches on the network.
 Login on switch with ID \fIid\fR. The \fBlist\fR command shows IDs of detected
 switches. This command delogs from the current switch, whether the login
 attempt is successful or not.
+.
+.TP
+\fBloop disable
+Disable loop detection.
+.
+.TP
+\fBloop enable
+Enable loop detection.
+.
+.TP
+\fBloop show
+Show loop detection configuration.
 .
 .TP
 \fBmirror disable

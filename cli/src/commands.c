@@ -37,6 +37,12 @@ int do_list (int argc, const char **argv, struct ngadmin *nga);
 int do_login (int argc, const char **argv, struct ngadmin *nga);
 
 
+/* loop */
+int do_loop_enable (int argc, const char **argv, struct ngadmin *nga);
+int do_loop_disable (int argc, const char **argv, struct ngadmin *nga);
+int do_loop_show (int argc, const char **argv, struct ngadmin *nga);
+
+
 /* mirror */
 int do_mirror_disable (int argc, const char **argv, struct ngadmin *nga);
 int do_mirror_set (int argc, const char **argv, struct ngadmin *nga);
@@ -132,6 +138,12 @@ COM_ROOT_START(commands)
 	COM_TERM(list, do_list)
 	
 	COM_TERM(login, do_login)
+	
+	COM_START(loop)
+		COM_TERM(disable, do_loop_disable)
+		COM_TERM(enable, do_loop_enable)
+		COM_TERM(show, do_loop_show)
+	COM_END
 	
 	COM_START(mirror)
 		COM_TERM(disable, do_mirror_disable)
