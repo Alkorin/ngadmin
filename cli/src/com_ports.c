@@ -91,9 +91,9 @@ int do_ports_statistics_show (int argc, const char **argv UNUSED, struct ngadmin
 		goto end;
 	}
 	
-	printf("Port\tReceived\tSent\tCRC errors\n");
+	printf("Port             Received                 Sent           CRC errors\n");
 	for (i = 0; i < sa->ports; i++)
-		printf("% 4i%12llu%12llu%14llu\n", i + 1, ps[i].recv, ps[i].sent, ps[i].crc);
+		printf("% 4i%21llu%21llu%21llu\n", i + 1, ps[i].recv, ps[i].sent, ps[i].crc);
 	
 end:
 	free(ps);
