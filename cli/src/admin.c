@@ -208,7 +208,7 @@ int main (int argc, char **argv)
 		{0, 0, 0, 0}
 	};
 	char *line, *com[MAXCOM];
-	const char *iface = "eth0", *password = NULL;
+	const char *iface = NULL, *password = NULL;
 	float timeout = 0.f;
 	bool kb = false, force = false, global = true;
 	struct timeval tv;
@@ -287,13 +287,18 @@ int main (int argc, char **argv)
 		printf("unknown trailing options\n");
 		goto end;
 	}
-	
+
+	if (iface == NULL)
+	{
+		fprintf(stderr, "no interface specified (-i), defaulting to eth0\n");
+		iface = "eth0";
+	}
 	
 	memset(com, 0, MAXCOM * sizeof(char*));
 	
 	nga = ngadmin_init(iface);
 	if (nga == NULL) {
-		fprintf(stderr, "initialization error\n");
+		fprintf(stderr, "initialization error (bad interface ?)\n");
 		goto end;
 	}
 	
