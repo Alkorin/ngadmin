@@ -371,10 +371,15 @@ int extractSwitchAttributes (struct swi_attr *sa, const List *l)
 			break;
 		
 		case ATTR_DHCP:
-			/* Note: DHCP attribute is special, it is 2 two bytes long when sent
-			 * by the switch but only 1 byte long when sent by the client
+			/* Note: DHCP attribute is special, on read request some
+			 * switches send a 2 two bytes attribute and others a
+			 * 1 byte attribute, while all seem to accept a 1 byte
+			 * attribute on write request
 			 */
-			sa->nc.dhcp = (at->size == 2) && ((*(unsigned short*)at->data) == 1);
+			if (at->size == 1)
+				sa->nc.dhcp = ((*(unsigned char*)at->data) == 1);
+			else if (at->size == 2)
+				sa->nc.dhcp = ((*(unsigned short*)at->data) == 1);
 			break;
 		
 		case ATTR_FIRM_VER:
