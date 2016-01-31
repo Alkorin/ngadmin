@@ -55,7 +55,7 @@ int do_netconf_set (int argc, const char **argv, struct ngadmin *nga)
 			if (strcasecmp(argv[k + 1], "yes") == 0) {
 				nc.dhcp = true;
 			} else if (strcasecmp(argv[k + 1], "no") == 0) {
-				nc.dhcp = 1;
+				nc.dhcp = false;
 			} else {
 				printf("Incorrect DHCP value\n");
 				ret = 1;
