@@ -187,7 +187,6 @@ end:
 int ngadmin_getLoopDetectionState (struct ngadmin *nga, int *s)
 {
 	List *attr;
-	ListNode *ln;
 	struct attr *at;
 	int ret = ERR_OK;
 	
