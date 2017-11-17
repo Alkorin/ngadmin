@@ -225,11 +225,23 @@ struct igmp_conf {
  */
 struct cabletest {
 	char port;		/**< port */
-	int v1;			/**< raw value 1 */
-	int v2;			/**< raw value 2 */
+	int test_result;			/**< test result code (see enum)  */
+	int fault_distance;			/**< fault distance / cable length in meters */
 };
 
-
+/**
+ * Cabletest result codes
+ */
+enum {
+	CABLETEST_OK = 0, //  System0056 = OK
+	CABLETEST_NO_CABLE = 1, //  System0052 = No Cable
+	CABLETEST_OPEN_CABLE = 2, //  System0053 = Open Cable
+	CABLETEST_SHORT_CIRCUIT = 3, //  System0054 = Short Circuit
+	CABLETEST_FIBER_CABLE = 4, //  System0055 = Fiber Cable
+	CABLETEST_SHORTED_CABLE = 5, //  System0064 = Shorted cable
+	CABLETEST_UNKNOWN = 6, //  System0065 = Unknown
+	CABLETEST_CROSSTALK = 7 //  System0066 = Crosstalk
+};
 
 #ifdef __cplusplus
 extern "C" {

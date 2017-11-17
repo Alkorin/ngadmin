@@ -208,11 +208,11 @@ static int cabletest_result_endecode (struct attr *at, bool encode)
 		return -EMSGSIZE;
 	
 	if (encode) {
-		acr->v1 = htonl(acr->v1);
-		acr->v2 = htonl(acr->v2);
+		acr->test_result = htonl(acr->test_result);
+		acr->fault_distance = htonl(acr->fault_distance);
 	} else {
-		acr->v1 = ntohl(acr->v1);
-		acr->v2 = ntohl(acr->v2);
+		acr->test_result = ntohl(acr->test_result);
+		acr->fault_distance = ntohl(acr->fault_distance);
 	}
 	
 	return 0;

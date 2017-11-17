@@ -38,7 +38,7 @@ int do_cabletest (int argc, const char **argv, struct ngadmin *nga)
 	}
 	
 	for (i = 0; i < j; i++)
-		printf("port %i: %08X %08X\n", ct[i].port, ct[i].v1, ct[i].v2);
+		printf("port %i: %s, code=%d, distance=%d m\n", ct[i].port, getCableTestResultStr(ct[i].test_result), ct[i].test_result, ct[i].fault_distance);
 	
 end:
 	free(ct);

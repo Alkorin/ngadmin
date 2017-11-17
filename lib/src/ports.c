@@ -165,8 +165,8 @@ int ngadmin_cabletest (struct ngadmin *nga, struct cabletest *ct, int nb)
 				goto end;
 			}
 			if (acr->port == ct[i].port) {
-				ct[i].v1 = acr->v1;
-				ct[i].v2 = acr->v2;
+				ct[i].test_result = acr->test_result;
+				ct[i].fault_distance = acr->fault_distance;
 				break;
 			}
 		}
