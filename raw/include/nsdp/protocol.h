@@ -145,8 +145,8 @@ struct attr_cabletest_do {
 
 struct attr_cabletest_result {
 	unsigned char port;		/* port number */
-	unsigned int v1;		/* raw value 1 (values unknown yet) */
-	unsigned int v2;		/* raw value 2 (values unknown yet) */
+	unsigned int test_result;		/* Cable test result code */
+	unsigned int fault_distance;		/* fault distance or cable length in meters */
 } __attribute__((packed));
 
 

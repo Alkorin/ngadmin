@@ -88,6 +88,18 @@ const char* const error_str_tab[] = {
 };
 
 
+const char* const cable_test_result_str_tab[] = {
+	[CABLETEST_OK] = "OK",
+	[CABLETEST_NO_CABLE] = "No Cable",
+	[CABLETEST_OPEN_CABLE] = "Open Cable",
+	[CABLETEST_SHORT_CIRCUIT] = "Short Circuit",
+	[CABLETEST_FIBER_CABLE] = "Fiber Cable",
+	[CABLETEST_SHORTED_CABLE] = "Shorted cable",
+	[CABLETEST_UNKNOWN] = "Unknown",
+	[CABLETEST_CROSSTALK] = "Crosstalk",
+	NULL
+};
+
 int parseValueStr (const char* const* tab, unsigned char mini, unsigned char maxi, const char *str)
 {
 	unsigned char i;

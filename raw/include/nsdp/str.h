@@ -17,6 +17,7 @@ extern const char* const qos_prio_str_tab[];
 extern const char* const bitrate_str_tab[];
 extern const char* const code_str_tab[];
 extern const char* const error_str_tab[];
+extern const char* const cable_test_result_str_tab[];
 
 
 static inline const char* safeStr (const char *s)
@@ -39,6 +40,7 @@ static inline const char* getValueStr (const char* const* tab, unsigned char min
 #define getBitrateStr(bitrate)	getValueStr(bitrate_str_tab, BITRATE_NOLIMIT, BITRATE_512M, bitrate)
 #define getCodeStr(code)	getValueStr(code_str_tab, CODE_READ_REQ, CODE_WRITE_REP, code)
 #define getErrorStr(error)	getValueStr(error_str_tab, ERROR_NONE, ERROR_DENIED, error)
+#define getCableTestResultStr(error)	getValueStr(cable_test_result_str_tab, ERROR_NONE, ERROR_DENIED, error)
 
 
 int parseValueStr (const char* const* tab, unsigned char mini, unsigned char maxi, const char *str);
